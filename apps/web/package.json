@@ -26,6 +26,7 @@
     "@visx/group": "3.3.0",
     "@visx/shape": "3.5.0",
     "@visx/tooltip": "3.3.0",
+    "@xstate/react": "3.0.0",
     "antd": "5.11.0",
     "antlr4": "4.13.2",
     "axios": "1.8.2",

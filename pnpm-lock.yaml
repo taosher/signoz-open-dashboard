@@ -132,6 +132,9 @@ importers:
       '@visx/tooltip':
         specifier: 3.3.0
         version: 3.3.0(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@xstate/react':
+        specifier: 3.0.0
+        version: 3.0.0(@types/react@18.0.26)(react@18.2.0)
       antd:
         specifier: 5.11.0
         version: 5.11.0(date-fns@3.6.0)(moment@2.30.1)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -1519,6 +1522,18 @@ packages:
 
   '@xobotyi/scrollbar-width@1.9.5':
     resolution: {integrity: sha512-N8tkAACJx2ww8vFMneJmaAgmjAG1tnVBZJRLRcx061tmsLRZHSEZSLuGWnwPtunsSLvSqXQ2wfp7Mgqg1I+2dQ==}
+
+  '@xstate/react@3.0.0':
+    resolution: {integrity: sha512-KHSCfwtb8gZ7QH2luihvmKYI+0lcdHQOmGNRUxUEs4zVgaJCyd8csCEmwPsudpliLdUmyxX2pzUBojFkINpotw==}
+    peerDependencies:
+      '@xstate/fsm': ^2.0.0
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      xstate: ^4.31.0
+    peerDependenciesMeta:
+      '@xstate/fsm':
+        optional: true
+      xstate:
+        optional: true
 
   '@xtuc/ieee754@1.2.0':
     resolution: {integrity: sha512-DX8nKgqcGwsc0eJSqYt5lwP4DH5FlHnmuWWBRy7X0NcaGR0ZtuyeESgMwTYVEtxmsNGY+qit4QYT/MIYTOTPeA==}
@@ -4242,6 +4257,20 @@ packages:
   uri-js@4.4.1:
     resolution: {integrity: sha512-7rKUyy33Q1yc98pQ1DAmLtwX109F7TIfWlW1Ydo8Wl1ii1SeHieeh0HHfPeL2fMXK6z0s8ecKs9frCuLJvndBg==}
 
+  use-isomorphic-layout-effect@1.2.1:
+    resolution: {integrity: sha512-tpZZ+EX0gaghDAiFR37hj5MgY6ZN55kLiPkJsKxBMZ6GZdOSPJXiOzPM984oPYZ5AnehYx5WQp1+ME8I/P/pRA==}
+    peerDependencies:
+      '@types/react': '*'
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
+  use-sync-external-store@1.7.0:
+    resolution: {integrity: sha512-6L+EeigHMQhdaIPNIFUKwfWJSwWFQ8gJbJ2DLOs5sDIegTwR9fRxvnM3uciHKjIZhFz+KAv2emhWMRvDmMcY8A==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   util-deprecate@1.0.2:
     resolution: {integrity: sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==}
 
@@ -5814,6 +5843,14 @@ snapshots:
       '@xtuc/long': 4.2.2
 
   '@xobotyi/scrollbar-width@1.9.5': {}
+
+  '@xstate/react@3.0.0(@types/react@18.0.26)(react@18.2.0)':
+    dependencies:
+      react: 18.2.0
+      use-isomorphic-layout-effect: 1.2.1(@types/react@18.0.26)(react@18.2.0)
+      use-sync-external-store: 1.7.0(react@18.2.0)
+    transitivePeerDependencies:
+      - '@types/react'
 
   '@xtuc/ieee754@1.2.0': {}
 
@@ -8885,6 +8922,16 @@ snapshots:
   uri-js@4.4.1:
     dependencies:
       punycode: 2.3.1
+
+  use-isomorphic-layout-effect@1.2.1(@types/react@18.0.26)(react@18.2.0):
+    dependencies:
+      react: 18.2.0
+    optionalDependencies:
+      '@types/react': 18.0.26
+
+  use-sync-external-store@1.7.0(react@18.2.0):
+    dependencies:
+      react: 18.2.0
 
   util-deprecate@1.0.2: {}
 

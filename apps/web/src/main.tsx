@@ -12,13 +12,17 @@ import { LOCALSTORAGE } from 'constants/localStorage';
 import { QueryParams } from 'constants/query';
 import ROUTES from 'constants/routes';
 import { ThemeProvider, useThemeConfig } from 'hooks/useDarkMode';
+import { NotificationProvider } from 'hooks/useNotifications';
+import { ResourceProvider } from 'hooks/useResourceAttribute';
 import { DashboardProvider } from 'providers/Dashboard/Dashboard';
 import { ErrorModalProvider } from 'providers/ErrorModalProvider';
+import { QueryBuilderProvider } from 'providers/QueryBuilder';
 import TimezoneProvider from 'providers/Timezone';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { Provider as ReduxProvider } from 'react-redux';
+import { CompatRouter } from 'react-router-dom-v5-compat';
 import { MemoryRouter } from 'react-router-dom';
 import store from 'store';
 import { setEmbedApiKey } from './embed/keyStore';
@@ -137,9 +141,11 @@ function boot(): void {
             `${ROUTES.DASHBOARD.replace(':dashboardId', dashboardId)}${routerSearch}`,
           ]}
         >
-          <DashboardProvider>
-            <DashboardPage />
-          </DashboardProvider>
+          <CompatRouter>
+            <DashboardProvider>
+              <DashboardPage />
+            </DashboardProvider>
+          </CompatRouter>
         </MemoryRouter>
       </ConfigProvider>
     );
@@ -152,7 +158,13 @@ function boot(): void {
           <QueryClientProvider client={queryClient}>
             <ReduxProvider store={store}>
               <ErrorModalProvider>
-                <Themed />
+                <NotificationProvider>
+                  <ResourceProvider>
+                    <QueryBuilderProvider>
+                      <Themed />
+                    </QueryBuilderProvider>
+                  </ResourceProvider>
+                </NotificationProvider>
               </ErrorModalProvider>
             </ReduxProvider>
           </QueryClientProvider>
