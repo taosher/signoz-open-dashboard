@@ -41,6 +41,7 @@
     "lucide-react": "0.498.0",
     "overlayscrollbars": "2.8.1",
     "overlayscrollbars-react": "0.5.6",
+    "papaparse": "5.4.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-full-screen": "1.1.1",
