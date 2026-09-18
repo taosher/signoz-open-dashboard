@@ -1,0 +1,761 @@
+@import '@signozhq/design-tokens/dist/style.css';
+@import 'overlayscrollbars/overlayscrollbars.css';
+
+@import './periscope.scss';
+
+/* Import fonts from CDN */
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans&wght@500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono&wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+#root,
+html,
+body {
+	height: 100%;
+	overflow: hidden;
+	font-family: 'Inter', sans-serif;
+	font-optical-sizing: auto;
+	font-weight: 400;
+	font-style: normal;
+}
+
+body {
+	padding: 0;
+	margin: 0;
+	box-sizing: border-box;
+}
+
+// Theme transition animations
+* {
+	transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease,
+		box-shadow 0.3s ease;
+}
+
+// For components that shouldn't transition (like loading spinners, animations)
+.no-transition,
+.no-transition * {
+	transition: none !important;
+}
+
+// Respect user's reduced motion preference
+@media (prefers-reduced-motion: reduce) {
+	* {
+		transition: none !important;
+	}
+}
+
+.u-legend {
+	max-height: 30px; // Default height for backward compatibility
+	overflow-y: auto;
+	overflow-x: hidden;
+
+	&::-webkit-scrollbar {
+		width: 0.5rem;
+	}
+	&::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+	&::-webkit-scrollbar-thumb {
+		background: rgb(136, 136, 136);
+		border-radius: 0.625rem;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	tr.u-series {
+		th {
+			display: flex;
+			align-items: center;
+			gap: 4px;
+			font-size: 12px;
+			-webkit-font-smoothing: antialiased;
+
+			.u-marker {
+				border-radius: 50%;
+			}
+		}
+
+		&.u-off {
+			text-decoration: line-through;
+			text-decoration-thickness: 3px;
+		}
+	}
+
+	// Enhanced legend styles
+	&.u-legend-enhanced {
+		max-height: none; // Remove default max-height restriction
+		padding: 6px 4px; // Back to original padding
+
+		// Thin and neat scrollbar for enhanced legend
+		&::-webkit-scrollbar {
+			width: 0.25rem;
+			height: 0.25rem;
+		}
+		&::-webkit-scrollbar-thumb {
+			background: rgba(136, 136, 136, 0.4);
+			border-radius: 0.125rem;
+
+			&:hover {
+				background: rgba(136, 136, 136, 0.7);
+			}
+		}
+		&::-webkit-scrollbar-track {
+			background: transparent;
+		}
+
+		// Enhanced table layout for better responsiveness
+		table {
+			width: 100%;
+			table-layout: fixed;
+		}
+
+		tbody {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 1px 2px;
+			align-items: center;
+			justify-content: flex-start;
+			width: 100%;
+		}
+
+		// Center alignment for single-line legends
+		&.u-legend-single-line tbody {
+			justify-content: center;
+		}
+
+		&.u-legend-right-aligned {
+			tbody {
+				align-items: flex-start !important;
+				justify-content: flex-start !important;
+			}
+
+			tr.u-series {
+				justify-content: flex-start !important;
+
+				th {
+					justify-content: flex-start !important;
+					text-align: left !important;
+
+					.legend-text {
+						text-align: left !important;
+					}
+				}
+			}
+		}
+
+		// Right-side legend specific styles
+		&.u-legend-right {
+			tbody {
+				flex-direction: column;
+				flex-wrap: nowrap;
+				align-items: stretch;
+				justify-content: flex-start;
+				gap: 2px;
+			}
+
+			tr.u-series {
+				width: 100%;
+
+				th {
+					display: flex;
+					align-items: center;
+					gap: 6px;
+					font-size: 12px;
+					font-weight: 600;
+					justify-content: flex-start;
+					cursor: pointer;
+					position: relative;
+					min-width: 0;
+					width: 100%;
+
+					.u-marker {
+						border-radius: 50%;
+						min-width: 11px;
+						min-height: 11px;
+						width: 11px;
+						height: 11px;
+						flex-shrink: 0;
+						cursor: pointer;
+						transition: all 0.2s ease;
+						position: relative;
+
+						&:hover {
+							transform: scale(1.2);
+							box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+						}
+
+						&:active {
+							transform: scale(0.9);
+						}
+					}
+
+					// Text container for proper ellipsis
+					.legend-text {
+						text-overflow: ellipsis;
+						overflow: hidden;
+						white-space: nowrap;
+						min-width: 0;
+						flex: 1;
+						padding-bottom: 2px;
+					}
+
+					// Tooltip styling
+					&[title] {
+						cursor: pointer;
+					}
+
+					&:hover {
+						background: rgba(255, 255, 255, 0.05);
+					}
+				}
+
+				&.u-off {
+					opacity: 0.5;
+					text-decoration: line-through;
+					text-decoration-thickness: 1px;
+
+					th {
+						&:hover {
+							opacity: 0.7;
+						}
+
+						.u-marker {
+							opacity: 0.3;
+							position: relative;
+
+							&::after {
+								content: '';
+								position: absolute;
+								top: 50%;
+								left: 50%;
+								width: 12px;
+								height: 2px;
+								background: #ff4444;
+								transform: translate(-50%, -50%) rotate(45deg);
+								border-radius: 1px;
+							}
+
+							&:hover {
+								opacity: 0.6;
+							}
+						}
+					}
+				}
+
+				// Focus styles for keyboard navigation
+				&:focus {
+					outline: 1px solid rgba(66, 165, 245, 0.8);
+					outline-offset: 1px;
+				}
+			}
+		}
+
+		// Bottom legend specific styles
+		&.u-legend-bottom {
+			tbody {
+				flex-direction: row;
+				flex-wrap: wrap;
+			}
+		}
+
+		&.u-legend-bottom tr.u-series {
+			display: flex;
+			flex: 0 0 auto;
+			min-width: fit-content;
+			max-width: 200px; // Limit width to enable truncation
+
+			th {
+				display: flex;
+				align-items: center;
+				gap: 6px;
+				font-size: 12px;
+				font-weight: 600;
+				padding: 6px 10px;
+				cursor: pointer;
+				white-space: nowrap;
+				-webkit-font-smoothing: antialiased;
+				border-radius: 2px;
+				min-width: 0; // Allow shrinking
+				max-width: 100%;
+
+				&:hover {
+					background: rgba(255, 255, 255, 0.05);
+				}
+
+				.u-marker {
+					border-radius: 50%;
+					min-width: 11px;
+					min-height: 11px;
+					width: 11px;
+					height: 11px;
+					flex-shrink: 0;
+					cursor: pointer;
+					transition: all 0.2s ease;
+					position: relative;
+
+					&:hover {
+						transform: scale(1.2);
+						box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+					}
+
+					&:active {
+						transform: scale(0.9);
+					}
+				}
+
+				.legend-text {
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
+					min-width: 0;
+					flex: 1;
+					padding-bottom: 2px;
+				}
+
+				// Tooltip styling
+				&[title] {
+					cursor: pointer;
+				}
+			}
+
+			&.u-off {
+				opacity: 0.5;
+				text-decoration: line-through;
+				text-decoration-thickness: 1px;
+
+				th {
+					&:hover {
+						opacity: 0.7;
+					}
+
+					.u-marker {
+						opacity: 0.3;
+						position: relative;
+
+						&::after {
+							content: '';
+							position: absolute;
+							top: 50%;
+							left: 50%;
+							width: 12px;
+							height: 2px;
+							background: #ff4444;
+							transform: translate(-50%, -50%) rotate(45deg);
+							border-radius: 1px;
+						}
+
+						&:hover {
+							opacity: 0.6;
+						}
+					}
+				}
+			}
+
+			// Focus styles for keyboard navigation
+			&:focus {
+				outline: 1px solid rgba(66, 165, 245, 0.8);
+				outline-offset: 1px;
+			}
+		}
+	}
+}
+
+// uPlot container adjustments for right-side legend
+.uplot {
+	&.u-plot-right-legend {
+		display: flex;
+		flex-direction: row;
+
+		.u-over {
+			flex: 1;
+		}
+
+		.u-legend {
+			flex-shrink: 0;
+			margin-top: 0;
+			margin-bottom: 0;
+		}
+	}
+
+	&.u-plot-bottom-legend {
+		display: flex;
+		flex-direction: column;
+
+		.u-legend {
+			margin-top: 10px;
+			margin-left: 0;
+			margin-right: 0;
+		}
+	}
+}
+
+/* Style the selected background */
+.u-select {
+	background: rgba(0, 0, 0, 0.5) !important;
+}
+
+#overlay {
+	font-family: 'Inter';
+	font-size: 12px;
+	position: absolute;
+	margin: 0.5rem;
+	background: rgba(0, 0, 0);
+	-webkit-font-smoothing: antialiased;
+	color: #fff;
+	z-index: 10000;
+	// pointer-events: none;
+	overflow: auto;
+	max-height: 480px !important;
+	max-width: 240px !important;
+	border-radius: 5px;
+	border: 1px solid rgba(255, 255, 255, 0.1);
+
+	.tooltip-container {
+		padding: 1rem;
+	}
+
+	&::-webkit-scrollbar {
+		width: 0.3rem;
+	}
+	&::-webkit-scrollbar-corner {
+		background: transparent;
+	}
+	&::-webkit-scrollbar-thumb {
+		background: rgb(136, 136, 136);
+		border-radius: 0.625rem;
+	}
+	&::-webkit-scrollbar-track {
+		background: transparent;
+	}
+}
+
+.tooltip-content-row {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.uplot {
+	width: 100%;
+	height: 100%;
+}
+
+::-webkit-scrollbar {
+	height: 1rem;
+	width: 0.5rem;
+}
+
+::-webkit-scrollbar:horizontal {
+	height: 0.5rem;
+	width: 1rem;
+}
+
+::-webkit-scrollbar-track {
+	background-color: transparent;
+	border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb {
+	--tw-border-opacity: 1;
+	background-color: rgba(217, 217, 227, 0.8);
+	border-color: rgba(255, 255, 255, var(--tw-border-opacity));
+	border-radius: 9999px;
+	border-width: 1px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	--tw-bg-opacity: 1;
+	background-color: rgba(236, 236, 241, var(--tw-bg-opacity));
+}
+
+.flexBtn {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+// =================================================================
+// AntD style overrides
+.ant-dropdown-menu {
+	margin-top: 2px;
+	min-width: 160px;
+
+	border-radius: 4px;
+	padding: 16px;
+	border: 1px solid var(--bg-slate-400, #1d212d);
+	background: linear-gradient(
+		139deg,
+		rgba(18, 19, 23, 0.8) 0%,
+		rgba(18, 19, 23, 0.9) 98.68%
+	);
+	box-shadow: 4px 10px 16px 2px rgba(0, 0, 0, 0.2);
+	backdrop-filter: blur(20px);
+
+	.ant-dropdown-menu-item-group-title {
+		font-size: 11px;
+		font-weight: 500;
+		line-height: 18px;
+		letter-spacing: 0.08em;
+		text-align: left;
+	}
+
+	.ant-dropdown-menu-item-group {
+		.ant-dropdown-menu-item-group-list {
+			margin: 0 !important;
+
+			.ant-dropdown-menu-item {
+				font-size: 13px;
+				font-weight: 400;
+				line-height: 17px;
+				letter-spacing: 0.01em;
+				text-align: left;
+			}
+		}
+	}
+}
+
+// these are default styles but are overridden by above dropdown styles
+.ant-dropdown-menu-submenu-popup {
+	padding: 0 !important;
+	z-index: 1050 !important;
+	box-shadow: none !important;
+	border: 0 !important;
+}
+
+// https://github.com/ant-design/ant-design/issues/41307
+.ant-picker-panels > *:first-child button.ant-picker-header-next-btn {
+	visibility: visible !important;
+}
+
+.ant-picker-panels > *:first-child button.ant-picker-header-super-next-btn {
+	visibility: visible !important;
+}
+
+.ant-picker-panels > *:last-child:not(:only-child) {
+	display: none !important;
+}
+
+.ant-picker-panel-container,
+.ant-picker-footer-extra > div {
+	flex-wrap: wrap !important;
+}
+
+.ant-picker-range-arrow {
+	display: none !important;
+}
+
+.ant-picker-panel-container {
+	background: none !important;
+	box-shadow: none !important;
+}
+
+.ant-tooltip {
+	--antd-arrow-background-color: var(--bg-slate-400, #1d212d);
+
+	.ant-tooltip-inner {
+		background-color: var(--bg-slate-400, #1d212d);
+	}
+	.flexBtn {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+}
+
+.members-count {
+	display: inline-block;
+	margin-left: 8px;
+	margin-right: 8px;
+}
+
+.lightMode {
+	.ant-dropdown-menu {
+		border: 1px solid var(--bg-vanilla-300);
+		background: var(--bg-vanilla-100);
+		box-shadow: 4px 10px 16px 2px rgba(0, 0, 0, 0.2);
+	}
+
+	.ant-dropdown-menu-item {
+		&:hover {
+			background-color: var(--bg-vanilla-300) !important;
+
+			&.ant-dropdown-menu-item-danger {
+				background-color: var(--bg-cherry-500) !important;
+			}
+		}
+	}
+
+	// Enhanced legend light mode styles
+	.u-legend-enhanced {
+		// Light mode scrollbar styling
+		&::-webkit-scrollbar-thumb {
+			background: rgba(0, 0, 0, 0.2);
+
+			&:hover {
+				background: rgba(0, 0, 0, 0.4);
+			}
+		}
+
+		&.u-legend-bottom tr.u-series {
+			th {
+				&:hover {
+					background: rgba(0, 0, 0, 0.05);
+				}
+			}
+
+			&.u-off {
+				opacity: 0.5;
+				text-decoration: line-through;
+				text-decoration-thickness: 1px;
+
+				th {
+					&:hover {
+						background: rgba(0, 0, 0, 0.08);
+						opacity: 0.7;
+					}
+
+					.u-marker {
+						opacity: 0.3;
+
+						&::after {
+							background: #cc3333;
+						}
+
+						&:hover {
+							opacity: 0.6;
+						}
+					}
+				}
+			}
+
+			// Light mode focus styles
+			&:focus {
+				outline: 1px solid rgba(25, 118, 210, 0.8);
+			}
+		}
+
+		&.u-legend-right tr.u-series {
+			th {
+				&:hover {
+					background: rgba(0, 0, 0, 0.05);
+				}
+			}
+
+			&.u-off {
+				opacity: 0.5;
+				text-decoration: line-through;
+				text-decoration-thickness: 1px;
+
+				th {
+					&:hover {
+						background: rgba(0, 0, 0, 0.08);
+						opacity: 0.7;
+					}
+
+					.u-marker {
+						opacity: 0.3;
+
+						&::after {
+							background: #cc3333;
+						}
+
+						&:hover {
+							opacity: 0.6;
+						}
+					}
+				}
+			}
+
+			// Light mode focus styles
+			&:focus {
+				outline: 1px solid rgba(25, 118, 210, 0.8);
+			}
+		}
+	}
+}
+
+.ant-notification-notice-message {
+	padding-right: 20px;
+}
+
+// we want the z-index to be less than 1000 (z-index for antd drawers) as we do not want intercom to interfare when drawers are open
+.intercom-lightweight-app {
+	z-index: 980 !important;
+}
+
+/**
+
+z-index chart for components across application
+
+intercom        -  980
+tooltip			-  1070
+popover 		-  1030
+drawer  		-  1000
+time picker 	-  1050
+dropdown 		-  1050
+modal 			-  1000
+notifications	-  2050
+
+*/
+
+@keyframes spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.animate-spin {
+	animation: spin 1s linear infinite;
+}
+
+// Custom legend tooltip for immediate display
+.legend-tooltip {
+	position: fixed;
+	background: var(--bg-slate-400);
+	color: var(--text-vanilla-100);
+	padding: 8px 12px;
+	border-radius: 6px;
+	font-size: 12px;
+	font-family: 'Geist Mono';
+	font-weight: 500;
+	z-index: 10000;
+	pointer-events: none;
+	white-space: nowrap;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+	border: 1px solid #374151;
+	-webkit-font-smoothing: antialiased;
+	letter-spacing: 0.025em;
+}
+
+// Light mode styling for legend tooltip
+.lightMode .legend-tooltip {
+	background: #ffffff;
+	color: #1f2937;
+	border: 1px solid #d1d5db;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metrics-application-container,
+.service-metric-table-container,
+.service-traces-table-container {
+	padding: 0px 8px;
+}
+
+.ap-dex-settings-popover-content {
+	display: flex;
+	width: 100%;
+	justify-content: flex-end;
+}
+
+.service-map-container {
+	padding: 0px 8px;
+}
+
+.cursor-pointer {
+	cursor: pointer;
+}

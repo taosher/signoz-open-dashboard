@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.git
+docs
+apps/web/third_party
+.env

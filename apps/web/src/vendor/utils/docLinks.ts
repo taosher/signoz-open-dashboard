@@ -1,0 +1,12 @@
+// @ts-nocheck - SigNoz 0.97.0 verbatim vendor (see third_party/PATCHES.md)
+const DOCLINKS = {
+	TRACES_EXPLORER_EMPTY_STATE:
+		'https://signoz.io/docs/instrumentation/overview/?utm_source=product&utm_medium=traces-explorer-empty-state',
+	USER_GUIDE: 'https://signoz.io/docs/userguide/',
+	TRACES_DETAILS_LINK:
+		'https://signoz.io/docs/product-features/trace-explorer/?utm_source=product&utm_medium=traces-explorer-trace-tab#traces-view',
+	METRICS_EXPLORER_EMPTY_STATE:
+		'https://signoz.io/docs/userguide/send-metrics-cloud/',
+};
+
+export default DOCLINKS;

@@ -1,0 +1,18 @@
+name: signoz-open-dashboard
+
+services:
+  embed:
+    build: .
+    image: signoz-open-dashboard:1.0.0-m1
+    ports:
+      - "8080:8080"
+    environment:
+      SIGNOZ_BASE_URL: ${SIGNOZ_BASE_URL:-http://192.168.10.2:30303}
+      SIGNOZ_API_KEY: ${SIGNOZ_API_KEY:-}
+      PORT: 8080
+      LOG_LEVEL: info
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8080/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3

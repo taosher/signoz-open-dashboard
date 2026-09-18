@@ -1,0 +1,11 @@
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+apps/web/dist/
+apps/api/dist/
+apps/web/third_party/
+.env
+.env*.local

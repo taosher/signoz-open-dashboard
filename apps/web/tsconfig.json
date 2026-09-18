@@ -1,0 +1,39 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "noEmit": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@signoz-open-dashboard/shared": ["../../packages/shared/src/index.ts"],
+      "@sentry/react": ["./src/shims/sentry.ts"],
+      "ReactI18": ["./src/vendor/ReactI18/index.tsx"],
+      "api": ["./src/embed/apiIndex.ts"],
+      "api/common/logEvent": ["./src/embed/logEvent.ts"],
+      "providers/App/App": ["./src/embed/AppContext.tsx"],
+      "api/*": ["./src/vendor/api/*"],
+      "assets/*": ["./src/vendor/assets/*"],
+      "components/*": ["./src/vendor/components/*"],
+      "constants/*": ["./src/vendor/constants/*"],
+      "container/*": ["./src/vendor/container/*"],
+      "hooks/*": ["./src/vendor/hooks/*"],
+      "pages/*": ["./src/vendor/pages/*"],
+      "parser/*": ["./src/vendor/parser/*"],
+      "lib/*": ["./src/vendor/lib/*"],
+      "periscope/*": ["./src/vendor/periscope/*"],
+      "providers/*": ["./src/vendor/providers/*"],
+      "store": ["./src/vendor/store/index.ts"],
+      "store/*": ["./src/vendor/store/*"],
+      "types/*": ["./src/vendor/types/*"],
+      "utils/*": ["./src/vendor/utils/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts"]
+}

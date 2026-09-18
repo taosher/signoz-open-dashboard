@@ -1,0 +1,25 @@
+{
+  "name": "signoz-open-dashboard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Embed SigNoz 0.97.0 dashboards via iframe (NestJS proxy + vendored React frontend)",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build && node scripts/sync-web-dist.js",
+    "build:api": "pnpm --filter @signoz-open-dashboard/api build",
+    "build:shared": "pnpm --filter @signoz-open-dashboard/shared build",
+    "build:web": "pnpm --filter @signoz-open-dashboard/web build",
+    "dev:api": "pnpm --filter @signoz-open-dashboard/api start:dev",
+    "dev:web": "pnpm --filter @signoz-open-dashboard/web dev",
+    "test": "pnpm -r test",
+    "test:api": "pnpm --filter @signoz-open-dashboard/api test",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "devDependencies": {
+    "typescript": "5.5.4"
+  }
+}
