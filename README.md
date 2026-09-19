@@ -12,7 +12,7 @@ Embed SigNoz v0.97.0 dashboards in any third-party site with a single iframe —
 
 No login page, no management UI. The caller just builds the URL.
 
-> Note: the canonical spec is `docs/product-tech-design-v1.0.md` (Chinese). This README is an English overview for OSS visibility. In case of conflict, the design doc wins.
+> Note: the canonical spec is `docs/product-tech-design.md` (Chinese). This README is an English overview for OSS visibility. In case of conflict, the design doc wins.
 
 ## Why this exists
 
@@ -166,7 +166,7 @@ apps/web/src/                # embed app (/embed/:dashboardId, memory-only key)
 packages/shared/             # embedParams.ts, errors.ts
 Dockerfile                   # webbuild -> apibuild -> node runtime
 docker-compose.yml
-docs/product-tech-design-v1.0.md  # single source of truth (Chinese)
+docs/product-tech-design.md  # single source of truth (Chinese)
 ```
 
 ## Security notes

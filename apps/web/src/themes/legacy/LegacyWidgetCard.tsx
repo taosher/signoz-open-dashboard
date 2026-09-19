@@ -6,6 +6,7 @@
 import { Card, Empty, Spin, Statistic, Table } from 'antd';
 import * as echarts from 'echarts';
 import { useEffect, useRef } from 'react';
+import type { EmbedLocale } from '@signoz-open-dashboard/shared';
 import { chartForeground, useColorMode } from '../../core/colorMode';
 import { toErrorProps } from '../../core/errors';
 import { widgetTitle } from '../../core/dashboard';
@@ -13,6 +14,7 @@ import { formatValue } from '../../signoz/format';
 import type { UiSeries, UiTable } from '../../signoz/v5Response';
 import type { WidgetProps } from '../types';
 import { LegacyErrorState } from './LegacyErrorState';
+import { legacyStrings } from './locale';
 
 function useEcharts(
   ref: React.RefObject<HTMLDivElement>,
@@ -118,18 +120,20 @@ function seriesOption(series: UiSeries[], unit: string | undefined, dark: boolea
   };
 }
 
-function TimeSeriesChart({ series, unit }: { series: UiSeries[]; unit?: string }): JSX.Element {
+function TimeSeriesChart({ series, unit, locale }: { series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const dark = useColorMode() === 'dark';
+  const t = legacyStrings(locale ?? 'zh');
   const option = series.length > 0 ? seriesOption(series, unit, dark) : null;
   useEcharts(ref, option);
-  if (series.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />;
+  if (series.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />;
   return <div ref={ref} style={{ flex: 1, minHeight: 0, width: '100%' }} />;
 }
 
-function BarChart({ series, unit }: { series: UiSeries[]; unit?: string }): JSX.Element {
+function BarChart({ series, unit, locale }: { series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const dark = useColorMode() === 'dark';
+  const t = legacyStrings(locale ?? 'zh');
   const fg = chartForeground(dark ? 'dark' : 'light');
   const option: echarts.EChartsCoreOption | null =
     series.length > 0
@@ -157,13 +161,14 @@ function BarChart({ series, unit }: { series: UiSeries[]; unit?: string }): JSX.
         }
       : null;
   useEcharts(ref, option);
-  if (series.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />;
+  if (series.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />;
   return <div ref={ref} style={{ flex: 1, minHeight: 0, width: '100%' }} />;
 }
 
-function PieChart({ tables, series, unit }: { tables: UiTable[]; series: UiSeries[]; unit?: string }): JSX.Element {
+function PieChart({ tables, series, unit, locale }: { tables: UiTable[]; series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
   const ref = useRef<HTMLDivElement>(null);
   const dark = useColorMode() === 'dark';
+  const t = legacyStrings(locale ?? 'zh');
   const fg = chartForeground(dark ? 'dark' : 'light');
   // scalar 口径有两种形态：列式（columns+data）按列名分片；
   // 序列式（aggregations+series，如本看板 pie）取各 query 最新值，名取 query 图例
@@ -221,7 +226,7 @@ function PieChart({ tables, series, unit }: { tables: UiTable[]; series: UiSerie
         }
       : null;
   useEcharts(ref, option);
-  if (items.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />;
+  if (items.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />;
   // 中心总值用 HTML 叠加（flex 居中），不受饼图半径/图例布局影响
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%' }}>
@@ -253,6 +258,7 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
   const { widget, loading, data, error, onRetry } = props;
   const title = widgetTitle(widget);
   const panel = String(widget.panelTypes ?? '');
+  const t = legacyStrings(props.locale ?? 'zh');
 
   let body: JSX.Element;
   if (loading && !data) {
@@ -266,11 +272,11 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
   } else if (error && !data) {
     body = <LegacyErrorState {...toErrorProps(error, onRetry)} />;
   } else if (panel === 'graph') {
-    body = <TimeSeriesChart series={data?.series ?? []} unit={widget.yAxisUnit} />;
+    body = <TimeSeriesChart series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
   } else if (panel === 'bar' || panel === 'histogram') {
-    body = <BarChart series={data?.series ?? []} unit={widget.yAxisUnit} />;
+    body = <BarChart series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
   } else if (panel === 'pie') {
-    body = <PieChart tables={data?.tables ?? []} series={data?.series ?? []} unit={widget.yAxisUnit} />;
+    body = <PieChart tables={data?.tables ?? []} series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
   } else if (panel === 'value') {
     const tables = data?.tables ?? [];
     const firstRow = tables[0]?.rows[0];
@@ -285,7 +291,7 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
         {Number.isFinite(v) ? (
           <Statistic value={formatValue(v, widget.yAxisUnit)} />
         ) : (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />
         )}
       </div>
     );
@@ -293,7 +299,7 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
     const tables = data?.tables ?? [];
     const t0 = tables[0];
     if (!t0 || t0.columns.length === 0) {
-      body = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="暂无数据" />;
+      body = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />;
     } else {
       body = (
         <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -314,13 +320,20 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
       );
     }
   } else {
-    body = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`暂不支持的 panel：${panel}`} />;
+    body = <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={`${t.unsupportedPanel}：${panel}`} />;
   }
 
   return (
     <Card
       size="small"
       title={title}
+      extra={
+        props.refreshing ? (
+          <span style={{ fontSize: 12, color: '#999' }} title="refreshing">
+            {t.updating}
+          </span>
+        ) : undefined
+      }
       style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
       bodyStyle={{ padding: 8, flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
     >

@@ -1,13 +1,14 @@
-/** EMBED_ 错误码空态 + Retry + requestId（样式由主题表达）。 */
+/** EMBED_ 错误码空态 + Retry + requestId（样式由主题表达，标题跟随 locale）。 */
 import { Button, Result } from 'antd';
 import { errorTitle, type ErrorProps } from '../../core/errors';
 
 export function LegacyErrorState(props: ErrorProps): JSX.Element {
+  const retryText = props.locale === 'en' ? 'Retry' : '重试';
   return (
     <div style={{ padding: 48, textAlign: 'center' }}>
       <Result
         status={props.code === 'EMBED_DASHBOARD_NOT_FOUND' ? '404' : 'error'}
-        title={errorTitle(props.code)}
+        title={errorTitle(props.code, props.locale)}
         subTitle={
           <span>
             {props.message}
@@ -18,7 +19,7 @@ export function LegacyErrorState(props: ErrorProps): JSX.Element {
         extra={
           props.retry && props.onRetry ? (
             <Button type="primary" onClick={props.onRetry}>
-              重试
+              {retryText}
             </Button>
           ) : null
         }

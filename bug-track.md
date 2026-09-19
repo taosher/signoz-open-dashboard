@@ -27,3 +27,5 @@
 | 2026-09-19 | 图表溢出卡片（x 轴标签/底部图例被裁） | 固定 300px 高 + grid bottom 预留不足（40px 装不下轴标签+图例两行） | 卡片 body 改 flex 纵向、图表 flex 自适应 + ResizeObserver；grid `bottom:64 + containLabel`，legend bottom 留白 | 已解决 | 视觉打磨 |
 | 2026-09-19 | 深色模式卡片/图表全白（`?mode=dark` 冷启动无效观感） | `ColorModeProvider` 包在 `TokensProvider` 内层，antd ConfigProvider 永远读到默认 light | 把 `TokensProvider` 移入 `EmbedApp` 内、包在 `ColorModeProvider` 里；main 仅保留 fatal 路径的 legacy token | 已解决 | 视觉打磨 |
 | 2026-09-19 | 饼图中心总值偏上、压环上沿 | 叠加层用 `padding-bottom: 12%` 居中，但百分比 padding 按**宽度**解析（596px 卡片扣掉 71px），中心被顶到 36% | 改用 `height: 88%` 绝对定位（百分比 height 按父高度解析），与饼心 `center 44%` 精确对齐 | 已解决 | 视觉打磨 |
+| 2026-09-19 | `@types/react@18.3` 下 antd icons 4.8 类型报错（`onPointerEnterCapture` 缺失） | antd icons v4 的 Icon 类型与新 JSX 类型不兼容 | legacy/shadcn 统一改 lucide 图标，删 `@ant-design/icons` 依赖 | 已解决 | shadcn 主题 |
+| 2026-09-19 | shadcn 折线/柱状图无图例 | `LineChart/BarChart` 里只放了 Tooltip，漏了 `<Legend content>` | 补 `ChartLegendContent`（截图复验） | 已解决 | shadcn 主题 |

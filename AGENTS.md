@@ -1,10 +1,10 @@
 # AGENTS.md
 
-> 本文件是 agent 在此仓库的工作契约。与下文冲突时，以 `docs/product-tech-design-v1.0.md` 为准。
+> 本文件是 agent 在此仓库的工作契约。与下文冲突时，以 `docs/product-tech-design.md` 为准。
 
 ## 1. 唯一事实源（docs-first）
 
-- `docs/product-tech-design-v1.0.md` 是唯一事实源（Single Source of Truth）。
+- `docs/product-tech-design.md` 是唯一事实源（Single Source of Truth）。
 - 任何设计变更（URL 参数、代理矩阵、裁剪清单、env、错误码、部署形态）必须先改该文档，再写代码。文档未更新的代码变更视为无效。
 - 文档与代码/注释冲突时，以文档为准，并在 `bug-track.md` 记一笔。
 
@@ -17,7 +17,7 @@
 
 ## 3. 工作流（五条硬约束）
 
-1. **先文档后代码**：改设计 → 改 `docs/product-tech-design-v1.0.md` → 再改代码。
+1. **先文档后代码**：改设计 → 改 `docs/product-tech-design.md` → 再改代码。
 2. **提交信息**：英文、conventional commits、祈使句、首行 ≤72 字符。类型仅用 `feat/fix/docs/refactor/test/chore`。例：`feat(api): proxy query_range with api key injection`。
 3. **技术文档**：一律中文（含 `docs/`、注释中的设计说明、PR 描述）。仅 commit message 用英文。
 4. **踩坑记录**：开发/调试/测试中任何坑，立即以表格行追加到根目录 `bug-track.md`，列固定为 `日期/现象/根因/处理/状态/关联`，不另开文件。

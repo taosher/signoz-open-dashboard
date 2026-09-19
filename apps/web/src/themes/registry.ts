@@ -3,10 +3,12 @@
  * 新增主题只加 `themes/<name>/` + 此处一行，不改 `core/`。
  */
 import { legacyTheme } from './legacy';
+import { shadcnTheme } from './shadcn';
 import type { ThemeModule } from './types';
 
 const REGISTRY: Record<string, ThemeModule> = {
   legacy: legacyTheme,
+  shadcn: shadcnTheme,
 };
 
 export function resolveTheme(name: string): ThemeModule {

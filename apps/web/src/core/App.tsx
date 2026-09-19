@@ -2,7 +2,10 @@
  * 嵌入主应用（core 编排 + 主题渲染，设计文档 §7.4）。
  * 路由仅 `/embed/:dashboardId`（由 main.tsx 解析传入）。
  */
-import { Empty, Spin } from 'antd';
+import { ConfigProvider, Empty, Spin } from 'antd';
+import enUS from 'antd/locale/en_US';
+import zhCN from 'antd/locale/zh_CN';
+import type { EmbedLocale } from '@signoz-open-dashboard/shared';
 import { useEffect, useMemo, useState } from 'react';
 import type { ParsedEmbedParams } from '@signoz-open-dashboard/shared';
 import { normalizeRefresh } from '@signoz-open-dashboard/shared';
@@ -30,16 +33,15 @@ function WidgetSlot(props: {
   variables: Record<string, unknown>;
   refreshKey: number;
   ready: boolean;
+  locale: EmbedLocale;
 }): JSX.Element {
-  const { data, loading, error } = useWidgetQuery(props.widget, {
+  const { data, loading, error, refreshing, refetch } = useWidgetQuery(props.widget, {
     startMs: props.startMs,
     endMs: props.endMs,
     variables: props.variables,
     refreshKey: props.refreshKey,
     enabled: props.ready,
   });
-  const [retryKey, setRetryKey] = useState(0);
-  void retryKey;
   const WidgetCard = props.theme.WidgetCard;
   return (
     <WidgetCard
@@ -47,7 +49,9 @@ function WidgetSlot(props: {
       loading={loading}
       data={data}
       error={error}
-      onRetry={() => setRetryKey((k) => k + 1)}
+      onRetry={() => refetch()}
+      refreshing={refreshing}
+      locale={props.locale}
       startMs={props.startMs}
       endMs={props.endMs}
     />
@@ -63,11 +67,16 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
   );
   const [refresh, setRefresh] = useState(params.refresh);
   const [mode, setMode] = useState(params.mode);
+  const [locale, setLocale] = useState(params.locale);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [tick, setTick] = useState(0);
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
     initIframeResizer();
+    const onFsChange = (): void => setIsFullscreen(document.fullscreenElement != null);
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
   const refreshMs = refreshToMs(normalizeRefresh(refresh));
@@ -118,6 +127,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
         endTime: 'relativeTime' in timeState ? null : timeState.endTime,
         refresh,
         mode,
+        locale,
         vars: Object.fromEntries(
           Object.entries(varValues).map(([k, v]) => [k, Array.isArray(v) ? v.map(String).join(',') : String(v)]),
         ),
@@ -125,7 +135,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
       hadKeyInUrl,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeState, refresh, mode, varValues]);
+  }, [timeState, refresh, mode, locale, varValues]);
 
   // 预热 substitute_vars（有变量时）：失败不阻塞渲染
   useEffect(() => {
@@ -158,7 +168,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
     return (
       <ColorModeProvider mode={mode}>
         <Tokens>
-          <ErrorState {...toErrorProps(dash.error, dash.reload)} />
+          <ErrorState {...toErrorProps(dash.error, dash.reload, locale)} />
         </Tokens>
       </ColorModeProvider>
     );
@@ -169,13 +179,18 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
   const layoutById = new Map((dd.layout ?? []).map((l) => [l.i, l]));
   const variables = varsDef;
 
-  const onFullscreen = (): void => {
-    void document.documentElement.requestFullscreen?.().catch(() => undefined);
+  const toggleFullscreen = (): void => {
+    if (document.fullscreenElement != null) {
+      void document.exitFullscreen().catch(() => undefined);
+    } else {
+      void document.documentElement.requestFullscreen?.().catch(() => undefined);
+    }
   };
 
   return (
     <ColorModeProvider mode={mode}>
       <Tokens>
+        <ConfigProvider locale={locale === 'en' ? enUS : zhCN}>
     <div style={{ minHeight: '100vh', background: mode === 'dark' ? '#141414' : '#f5f5f5' }}>
       <Toolbar
         title={dd.title}
@@ -193,7 +208,15 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
         onRefreshChange={(r) => setRefresh(r)}
         mode={mode}
         onModeChange={(m) => setMode(m)}
-        onFullscreen={onFullscreen}
+        timeControl={params.timeControl}
+        refreshControl={params.refreshControl}
+        modeControl={params.modeControl}
+        fullscreenControl={params.fullscreenControl}
+        localeControl={params.localeControl}
+        locale={locale}
+        onLocaleChange={(l) => setLocale(l)}
+        isFullscreen={isFullscreen}
+        onFullscreenToggle={toggleFullscreen}
       />
       <div style={{ padding: 12 }}>
         {widgets.length === 0 ? (
@@ -215,6 +238,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
                       variables={varValues}
                       refreshKey={tick}
                       ready={varsReady}
+                      locale={locale}
                     />
                   </div>
                 </div>
@@ -224,6 +248,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
         )}
       </div>
     </div>
+        </ConfigProvider>
       </Tokens>
     </ColorModeProvider>
   );

@@ -1,6 +1,6 @@
 /**
- * 时间语义（设计文档 §4.1 / §7.4-4）。默认 `now-6h~now` UTC。
- * 原生参数 `relativeTime`（如 `6h`）或 `startTime+endTime`（epoch 秒）。
+ * 时间语义（设计文档 §4.1 / §7.4-4）。默认 `now-30m~now` UTC。
+ * 原生参数 `relativeTime`（如 `30m`）或 `startTime+endTime`（epoch 秒）。
  */
 import type { ParsedEmbedParams } from '@signoz-open-dashboard/shared';
 
@@ -25,7 +25,7 @@ const REL_RE = /^(\d+)(s|m|h|d|w|month|months)$/;
 
 export function relativeToMs(relativeTime: string, nowMs = Date.now()): TimeRange {
   const m = REL_RE.exec(relativeTime.trim());
-  if (!m) return { startMs: nowMs - 6 * 3600 * 1000, endMs: nowMs };
+  if (!m) return { startMs: nowMs - 30 * 60 * 1000, endMs: nowMs };
   const n = Number(m[1]);
   const unit = m[2];
   const per =
@@ -48,7 +48,7 @@ export function resolveTimeRange(p: Pick<ParsedEmbedParams, 'relativeTime' | 'st
   if (p.startTime !== null && p.endTime !== null) {
     return { startMs: p.startTime * 1000, endMs: p.endTime * 1000 };
   }
-  return { startMs: nowMs - 6 * 3600 * 1000, endMs: nowMs };
+  return { startMs: nowMs - 30 * 60 * 1000, endMs: nowMs };
 }
 
 /** refresh（`off`/`30s`/`1m`…）转轮询毫秒数；`off`/`inherit` 返回 null（不轮询）。 */

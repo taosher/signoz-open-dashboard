@@ -1,0 +1,14 @@
+/**
+ * shadcn 主题样式基座。
+ * tailwind 只做 theme + utilities 两层（不要 preflight，避免污染 legacy 主题），
+ * 深色用 class 变体（`.schn-dark` 包裹，跟随 `?mode=`，不跟系统）。
+ */
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@custom-variant dark (&:where(.schn-dark, .schn-dark *));
+
+.schn {
+  font-family:
+    Inter, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}

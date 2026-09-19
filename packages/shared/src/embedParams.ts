@@ -7,8 +7,8 @@
 
 export type EmbedLocale = 'zh' | 'en';
 
-/** 设计文档 §7.2：主题注册表名。M5 仅 `legacy`，未知值回退 `legacy`。 */
-export const KNOWN_EMBED_THEMES = ['legacy'] as const;
+/** 设计文档 §7.2：主题注册表名。未知值回退 `legacy`。 */
+export const KNOWN_EMBED_THEMES = ['legacy', 'shadcn'] as const;
 export type EmbedThemeName = (typeof KNOWN_EMBED_THEMES)[number];
 export const DEFAULT_EMBED_THEME: EmbedThemeName = 'legacy';
 
@@ -16,10 +16,21 @@ export const DEFAULT_EMBED_THEME: EmbedThemeName = 'legacy';
 export type EmbedMode = 'light' | 'dark';
 export const DEFAULT_EMBED_MODE: EmbedMode = 'light';
 
+/** 工具条控制项三态（设计文档 §4.1）：show 显示可用，hidden 不渲染，disabled 置灰。 */
+export type ControlVisibility = 'show' | 'hidden' | 'disabled';
+
+export function normalizeControlVisibility(raw: unknown): ControlVisibility {
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (v === 'hidden' || v === 'disabled') return v;
+  return 'show';
+}
+
 export interface ParsedEmbedParams {
   dashboardId: string;
   apiKey?: string;
-  /** 原生相对时间，如 `6h`；绝对时间模式下为 null。 */
+  /** 原生相对时间，如 `30m`；绝对时间模式下为 null。 */
   relativeTime: string | null;
   /** 绝对时间（epoch 秒）。相对模式下为 null。 */
   startTime: number | null;
@@ -32,6 +43,11 @@ export interface ParsedEmbedParams {
   toolbar: boolean;
   title: boolean;
   fullscreen: boolean;
+  timeControl: ControlVisibility;
+  refreshControl: ControlVisibility;
+  modeControl: ControlVisibility;
+  fullscreenControl: ControlVisibility;
+  localeControl: ControlVisibility;
   vars: Record<string, string>;
 }
 
@@ -78,7 +94,7 @@ function parseEpoch(v: string | null): number | null {
 
 /**
  * 旧式 `from/to` 单向兼容翻译（设计文档 §4.1）。
- * `now-6h~now` → `{ relativeTime: '6h' }`；纯 `now~now` 视为默认 `6h`；
+ * `now-30m~now` → `{ relativeTime: '30m' }`；纯 `now~now` 视为默认 `30m`；
  * 否则按 epoch 秒解析为绝对时间；解析失败返回 null（调用方用默认）。
  */
 export function translateLegacyFromTo(
@@ -93,7 +109,7 @@ export function translateLegacyFromTo(
     const rf = rel(from);
     const rt = rel(to);
     if (rf !== null && rt !== null && (rf !== '' || rt !== '')) {
-      return { relativeTime: rf === '' ? '6h' : rf };
+      return { relativeTime: rf === '' ? '30m' : rf };
     }
     const s = parseEpoch(from);
     const e = parseEpoch(to);
@@ -132,7 +148,7 @@ export function parseEmbedParams(
     }
   }
 
-  // 时间：原生参数优先，旧式 from/to 兼容翻译，默认 6h。
+  // 时间：原生参数优先，旧式 from/to 兼容翻译，默认 30m。
   let relativeTime: string | null = null;
   let startTime: number | null = null;
   let endTime: number | null = null;
@@ -150,7 +166,7 @@ export function parseEmbedParams(
       startTime = s;
       endTime = e;
     } else {
-      relativeTime = '6h';
+      relativeTime = '30m';
     }
   } else {
     const compat = translateLegacyFromTo(params.get('from'), params.get('to'));
@@ -160,9 +176,9 @@ export function parseEmbedParams(
       startTime = compat.startTime;
       endTime = compat.endTime;
     } else if (params.get('from') === null && params.get('to') === null) {
-      relativeTime = '6h';
+      relativeTime = '30m';
     } else {
-      relativeTime = '6h';
+      relativeTime = '30m';
     }
   }
 
@@ -182,6 +198,11 @@ export function parseEmbedParams(
     toolbar: parseBool(params.get('toolbar'), true),
     title: parseBool(params.get('title'), true),
     fullscreen: parseBool(params.get('fullscreen'), false),
+    timeControl: normalizeControlVisibility(params.get('timeControl')),
+    refreshControl: normalizeControlVisibility(params.get('refreshControl')),
+    modeControl: normalizeControlVisibility(params.get('modeControl')),
+    fullscreenControl: normalizeControlVisibility(params.get('fullscreenControl')),
+    localeControl: normalizeControlVisibility(params.get('localeControl')),
     vars,
   };
 }
@@ -232,6 +253,11 @@ export function serializeEmbedParams(
   if (!p.toolbar) s.set('toolbar', 'false');
   if (!p.title) s.set('title', 'false');
   if (p.fullscreen) s.set('fullscreen', 'true');
+  if (p.timeControl !== 'show') s.set('timeControl', p.timeControl);
+  if (p.refreshControl !== 'show') s.set('refreshControl', p.refreshControl);
+  if (p.modeControl !== 'show') s.set('modeControl', p.modeControl);
+  if (p.fullscreenControl !== 'show') s.set('fullscreenControl', p.fullscreenControl);
+  if (p.localeControl !== 'show') s.set('localeControl', p.localeControl);
   for (const [k, v] of Object.entries(p.vars)) {
     s.set(`var-${k}`, v);
   }

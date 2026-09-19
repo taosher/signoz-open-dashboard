@@ -98,20 +98,21 @@ Alert / Annotation / Lock 结论：Phase 1 = 藏 Alert + 藏 Lock + 只读显 An
 
 Base：`{EMBED_ORIGIN}/embed/:dashboardId`
 
-时间参数沿用 SigNoz 原生名（`DateTimeSelectionV2` 直接识别，零改造）：`relativeTime`（如 `6h`，默认）或 `startTime` + `endTime`。调用方可继续用旧式的 `from=now-6h&to=now`，入口在挂载前一次性翻译为原生参数并 `replaceState`。
+时间参数沿用 SigNoz 原生名（`DateTimeSelectionV2` 直接识别，零改造）：`relativeTime`（如 `30m`，默认）或 `startTime` + `endTime`。调用方可继续用旧式的 `from=now-30m&to=now`，入口在挂载前一次性翻译为原生参数并 `replaceState`。
 
 | 参数 | 示例 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
 | `apiKey` | `?apiKey=ecsO...` | 否 | `env.SIGNOZ_API_KEY` | 覆盖默认值。优先级 URL > env。无则 401 空态 |
-| `relativeTime` / `startTime`+`endTime` | `6h` 或 epoch | 否 | `6h` | 原生参数名；`from/to` 兼容翻译。不跟随 Dashboard 保存时间 |
-| `theme` | `legacy`（未来可扩展） | 否 | `legacy` | 主题注册表见 §7.2，未知值回退 `legacy`；各主题可用不同组件库 |
+| `relativeTime` / `startTime`+`endTime` | `30m` 或 epoch | 否 | `30m` | 原生参数名；`from/to` 兼容翻译。不跟随 Dashboard 保存时间 |
+| `theme` | `legacy` / `shadcn` | 否 | `legacy` | 主题注册表见 §7.2，未知值回退 `legacy`；各主题可用不同组件库 |
 | `mode` | `light` / `dark` | 否 | `light` | 深浅色（与主题正交，见 §7.4-5）；未知值回退 `light` |
-| `locale` | `zh` / `en` | 否 | 跟随主题默认 | 语言由当前主题实现，core 不规定 |
+| `locale` | `zh` / `en` | 否 | 跟随主题默认 | 语言由当前主题实现（legacy 提供工具条中英切换，见 `localeControl`），core 不规定 |
 | `refresh` | `off` / `30s` / `1m` / `5m` | 否 | 继承 Dashboard 保存值 | 允许最大值钳制 `>=10s`，防刷爆 |
 | `annotations` | `true` / `false` | 否 | `true` | 预留（开源 0.97.0 无上游接口，暂无数据源） |
 | `var-<name>` | `?var-env=prod` | 否 | Dashboard 默认值 | URL 优先级最高，覆盖 Dashboard 默认 + localStorage |
 | `title` / `toolbar` | `?title=false&toolbar=false` | 否 | `true` | 极简工具条显隐，方便全屏大屏 |
-| `fullscreen` | `?fullscreen=true` | 否 | `false` | 直进全屏 |
+| `timeControl` / `refreshControl` / `modeControl` / `fullscreenControl` / `localeControl` | `show` / `hidden` / `disabled` | 否 | `show` | 各控制项三态：`show`（默认，可用）、`hidden`（不渲染）、`disabled`（置灰不可点）；`toolbar=false` 时整体隐藏 |
+| `fullscreen` | `?fullscreen=true` | 否 | `false` | 直进全屏（加载后自动进入；工具条按钮可在全屏/退出全屏间切换） |
 
 - 全部参数变更经 `history.replaceState` 同步回地址栏（不 push，不污染历史）。
 - `dashboardId` 为 SigNoz UUID v7（例 `019ca330-...`），非法格式直接 404 空态，不打 Upstream。
@@ -288,6 +289,7 @@ interface ThemeModule {
 ```
 
 - `ToolbarProps` 允许扩展可选字段（如 `variableOptions` 解析候选、`mode/onModeChange` 深浅切换），新主题可忽略；必填契约不变。
+- `WidgetProps.refreshing` 为可选扩展（后台取数中的弱提示），缺省忽略。
 - core 只依赖该契约，不依赖任何主题的具体组件库；新增主题不得修改 core（除 registry 注册一行）。
 - 各主题自带依赖（如 legacy 用 antd/echarts，未来主题用 shadcn 系），互不污染；构建时全量打包，运行时按 `?theme=` 选择。
 - Dashboard 级别体验（UTC、只读 grid、变量优先级、replaceState、Key 只放内存）由 core 保证，各主题不得破坏。
@@ -304,8 +306,8 @@ interface ThemeModule {
 1. **登录态**：无 JWT；`apiKey(URL) ?? env.SIGNOZ_API_KEY`，内存存放，不写 localStorage。
 2. **请求**：一律同源 `/api/signoz/*`，拦截器附 `x-embed-api-key`（无则不带）。
 3. **路由**：仅 `/embed/:dashboardId`。
-4. **时间/变量**：默认 `now-6h~now` UTC；`var-*` 优先级最高；变更 `replaceState` 回写（不回写 env 默认 key）。变量一律按 `name` 归一（看板 JSON 以 id 为键，`name` 为准）；QUERY 型经 `/api/v2/variables/query`、DYNAMIC 型经 `/api/v1/fields/values` 解析候选，无历史选择时多选默认全选、单选取默认值或首候选。
-5. **主题/语言/深浅色**：`?theme=legacy` 默认（未知值回退 legacy）；`?mode=light/dark` 默认 light（未知值回退 light），由 core 经上下文提供，各主题自行表达；语言跟随主题实现，core 不规定。
+4. **时间/变量**：默认 `now-30m~now` UTC；`var-*` 优先级最高；变更 `replaceState` 回写（不回写 env 默认 key）。时间选择含快速范围 + 自定义起止（RangePicker 到秒）；工具条只展示 UTC 时间，不提供时区切换。变量一律按 `name` 归一（看板 JSON 以 id 为键，`name` 为准）；QUERY 型经 `/api/v2/variables/query`、DYNAMIC 型经 `/api/v1/fields/values` 解析候选，无历史选择时多选默认全选、单选取默认值或首候选。
+5. **主题/语言/深浅色**：`?theme=legacy` 默认（未知值回退 legacy）；`?mode=light/dark` 默认 light（未知值回退 light），由 core 经上下文提供，各主题自行表达；语言跟随主题实现（legacy 工具条经 `localeControl` 提供中英切换），core 不规定。
 6. **Grid 只读**：不可拖拽；`?annotations=` 预留。
 7. **iframe-resizer child**：core 统一接入。
 8. **错误页**：core 按 §6.4 code 映射，主题只负责样式表达。
@@ -315,11 +317,16 @@ interface ThemeModule {
 - 后端 API 锁定 0.97.0（`/api/v3|v4|v5/query_range`、`POST /api/v2/variables/query`、`POST .../substitute_vars`），未知字段透传不校验。
 - 参考快照仅用于新人理解查询语义；SigNoz 后续版本的前端变更与本仓库无关，无需合 patch。
 
+### 7.6 shadcn 主题（`?theme=shadcn`）
+
+- 组件库：tailwind（preflight 关闭，不污染 legacy）+ Recharts（对照 `ui.shadcn chart`：ChartContainer 组合 + CSS 变量配色）+ lucide 图标；工具条原生 select/details + tailwind。
+- 取数/变量/图例/单位语义与 legacy 共用 `core/` + `signoz/`，仅渲染层不同；深浅色同样经 core 上下文（`.schn-dark` class 变体）。
+
 ---
 
 ## 8. 共享包（packages/shared）
 
-- `parseEmbedParams(search)` + 校验（UUID、`theme` 注册表名、`locale`、refresh 正则）。
+- `parseEmbedParams(search)` + 校验（UUID、`theme` 注册表名、`mode`、`locale`、refresh 正则、控制项三态 `show/hidden/disabled`）。
 - `serializeEmbedParams`（replaceState 用，若入参自带 key 则保留，否则不追加 env 默认 key，避免泄漏服务端默认 key）。
 - `EmbedError { code, httpStatus, requestId, message }` 类型前后端共用。
 

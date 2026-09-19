@@ -8,6 +8,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { EmbedApp } from './core/App';
 import { EmbedAuthProvider } from './core/auth';
+import { EmbedQueryProvider } from './core/queryClient';
 import { errorTitle } from './core/errors';
 import { syncUrl } from './core/replaceState';
 import { resolveTheme } from './themes/registry';
@@ -22,11 +23,12 @@ function boot(): void {
   const keepKey = new URLSearchParams(rawSearch).has('apiKey') || new URLSearchParams(rawSearch).has('api_key');
 
   const renderFatal = (title: string, sub: string): void => {
+    const locale = new URLSearchParams(rawSearch).get('locale') === 'en' ? 'en' : 'zh';
     const Err = legacyTheme.ErrorState;
     createRoot(rootEl).render(
       <React.StrictMode>
         <legacyTheme.TokensProvider>
-          <Err code="EMBED_DASHBOARD_NOT_FOUND" message={`${title}：${sub}`} retry={false} />
+          <Err code="EMBED_DASHBOARD_NOT_FOUND" message={`${title}：${sub}`} retry={false} locale={locale} />
         </legacyTheme.TokensProvider>
       </React.StrictMode>,
     );
@@ -34,7 +36,11 @@ function boot(): void {
   };
 
   if (!isValidDashboardId(dashboardId)) {
-    renderFatal('Dashboard 不存在或已被删除', '非法 dashboardId，直接 404，不打 Upstream');
+    if (new URLSearchParams(rawSearch).get('locale') === 'en') {
+      renderFatal('Dashboard not found or deleted', 'Invalid dashboard id, upstream not called');
+    } else {
+      renderFatal('Dashboard 不存在或已被删除', '非法 dashboardId，直接 404，不打 Upstream');
+    }
     return;
   }
 
@@ -49,9 +55,11 @@ function boot(): void {
   const theme = resolveTheme(params.theme);
   createRoot(rootEl).render(
     <React.StrictMode>
-      <EmbedAuthProvider dashboardId={dashboardId} initialKey={params.apiKey}>
-        <EmbedApp theme={theme} params={params} pathname={window.location.pathname} hadKeyInUrl={keepKey} />
-      </EmbedAuthProvider>
+      <EmbedQueryProvider>
+        <EmbedAuthProvider dashboardId={dashboardId} initialKey={params.apiKey}>
+          <EmbedApp theme={theme} params={params} pathname={window.location.pathname} hadKeyInUrl={keepKey} />
+        </EmbedAuthProvider>
+      </EmbedQueryProvider>
     </React.StrictMode>,
   );
 }

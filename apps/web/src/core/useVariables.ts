@@ -1,5 +1,8 @@
-/** 看板变量 hook：解析一次（不随轮询 tick 重复取数），用户改选走上层覆盖。 */
-import { useEffect, useState } from 'react';
+/**
+ * 看板变量（M7：TanStack Query）。候选值变化慢：`staleTime` 5 分钟，
+ * 解析一次（不随轮询 tick），用户改选走上层覆盖。
+ */
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEmbedAuth } from './auth';
 import type { DashboardVariable } from './dashboard';
 import { resolveVariables, type VariableOptions, type VariableValues } from './variables';
@@ -17,26 +20,27 @@ export function useVariables(
   startMs: number,
   endMs: number,
 ): VariablesState {
-  const { apiKey } = useEmbedAuth();
-  const [state, setState] = useState<VariablesState>({ loading: true, values: { ...urlVars }, options: {} });
+  const { dashboardId, apiKey } = useEmbedAuth();
   const urlVarsKey = JSON.stringify(urlVars);
   const varsKey = varsDef ? Object.keys(varsDef).join(',') : '';
 
-  useEffect(() => {
-    const ctrl = new AbortController();
-    setState((s) => ({ ...s, loading: true }));
-    resolveVariables(varsDef, { urlVars: JSON.parse(urlVarsKey) as Record<string, string>, startMs, endMs, apiKey, signal: ctrl.signal })
-      .then(({ values, options }) => {
-        if (ctrl.signal.aborted) return;
-        setState({ loading: false, values, options });
-      })
-      .catch(() => {
-        if (ctrl.signal.aborted) return;
-        setState({ loading: false, values: JSON.parse(urlVarsKey) as Record<string, string>, options: {} });
-      });
-    return () => ctrl.abort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [varsKey, urlVarsKey, timeKey, apiKey]);
+  const query = useQuery({
+    queryKey: ['embed', 'vars', dashboardId, varsKey, urlVarsKey, timeKey, apiKey ? 'key' : 'nokey'],
+    queryFn: async ({ signal }): Promise<{ values: VariableValues; options: VariableOptions }> =>
+      resolveVariables(varsDef, {
+        urlVars: JSON.parse(urlVarsKey) as Record<string, string>,
+        startMs,
+        endMs,
+        apiKey,
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  return state;
+  return {
+    loading: query.isLoading && !query.data,
+    values: query.data?.values ?? (JSON.parse(urlVarsKey) as Record<string, string>),
+    options: query.data?.options ?? {},
+  };
 }
