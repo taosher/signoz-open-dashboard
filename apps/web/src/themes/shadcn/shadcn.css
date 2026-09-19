@@ -53,3 +53,12 @@
 .schn svg :focus {
   outline: none;
 }
+
+/* day-picker v10 把 selected 画在格子上，按钮文字需反白（类在不同元素，无层叠可争） */
+.schn [data-selected='true'] > button {
+  color: #fafafa;
+  background-color: transparent;
+}
+.schn-dark [data-selected='true'] > button {
+  color: #09090b;
+}

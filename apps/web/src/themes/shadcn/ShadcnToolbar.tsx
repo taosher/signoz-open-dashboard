@@ -5,17 +5,33 @@
  */
 import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { RELATIVE_PRESETS, resolveTimeRange } from '../../core/time';
 import type { ToolbarProps } from '../types';
+import { SchnCalendar, toHM, withTime } from './calendar';
 import { shadcnStrings } from './locale';
 import { SchnPopover, SchnPopoverContent, SchnPopoverTrigger, SchnToggleGroup, SchnCheckbox } from './primitives';
 import { SchnSelectItem, SchnSelectRoot } from './select';
 import { SchnButton, cn } from './ui';
 
-function toLocalInput(ms: number): string {
-  const d = new Date(ms);
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+/** 两位数字时间输入（shadcn 风格，无下拉浮层）。失焦时补零并钳制到合法范围。 */
+function TimeNumberInput(props: { value: string; max: number; onChange: (v: string) => void }): JSX.Element {
+  return (
+    <input
+      inputMode="numeric"
+      maxLength={2}
+      value={props.value}
+      onChange={(e) => {
+        const digits = e.target.value.replace(/\D/g, '').slice(0, 2);
+        props.onChange(digits);
+      }}
+      onBlur={() => {
+        const n = Math.max(0, Math.min(props.max, Number(props.value) || 0));
+        props.onChange(String(n).padStart(2, '0'));
+      }}
+      className="h-7 w-[52px] rounded-md border border-zinc-200 bg-white px-1 text-center text-xs tabular-nums text-zinc-900 focus-visible:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+    />
+  );
 }
 
 const inputCls =
@@ -25,8 +41,11 @@ export function ShadcnToolbar(props: ToolbarProps): JSX.Element {
   const locale = props.locale ?? 'zh';
   const t = shadcnStrings(locale);
   const varNames = Object.keys(props.variables);
-  const [customStart, setCustomStart] = useState('');
-  const [customEnd, setCustomEnd] = useState('');
+  const [range, setRange] = useState<DateRange | undefined>(undefined);
+  const [startHour, setStartHour] = useState('00');
+  const [startMin, setStartMin] = useState('00');
+  const [endHour, setEndHour] = useState('00');
+  const [endMin, setEndMin] = useState('00');
   const [timeOpen, setTimeOpen] = useState(false);
 
   const timeCtl = props.timeControl ?? 'show';
@@ -41,15 +60,26 @@ export function ShadcnToolbar(props: ToolbarProps): JSX.Element {
       startTime: props.startTime,
       endTime: props.endTime,
     });
-    setCustomStart(toLocalInput(startMs));
-    setCustomEnd(toLocalInput(endMs));
+    const s = new Date(startMs);
+    const e = new Date(endMs);
+    setRange({ from: s, to: e });
+    const sh = toHM(s);
+    const eh = toHM(e);
+    setStartHour(sh.h);
+    setStartMin(sh.m);
+    setEndHour(eh.h);
+    setEndMin(eh.m);
   };
 
   const applyCustom = (): void => {
-    const s = Math.floor(new Date(customStart).getTime() / 1000);
-    const e = Math.floor(new Date(customEnd).getTime() / 1000);
-    if (Number.isFinite(s) && Number.isFinite(e) && e > s) {
-      props.onTimeChange({ startTime: s, endTime: e });
+    if (!range?.from || !range?.to) return;
+    const s = withTime(range.from, startHour, startMin, new Date());
+    const e = withTime(range.to, endHour, endMin, new Date());
+    if (e.getTime() > s.getTime()) {
+      props.onTimeChange({
+        startTime: Math.floor(s.getTime() / 1000),
+        endTime: Math.floor(e.getTime() / 1000),
+      });
     }
     setTimeOpen(false);
   };
@@ -155,7 +185,7 @@ export function ShadcnToolbar(props: ToolbarProps): JSX.Element {
                   <ChevronDown size={13} className="shrink-0 opacity-50" />
                 </button>
               </SchnPopoverTrigger>
-              <SchnPopoverContent className="w-[300px]">
+              <SchnPopoverContent className="w-[348px]">
                 <div className="grid grid-cols-2 gap-1">
                   {presetOptions
                     .filter((p) => p.value !== 'custom')
@@ -179,25 +209,19 @@ export function ShadcnToolbar(props: ToolbarProps): JSX.Element {
                 </div>
                 <div className="my-2 border-t border-zinc-100 dark:border-zinc-900" />
                 <div className="mb-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">{t.customRange}</div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="datetime-local"
-                    className={cn(inputCls, 'min-w-0 flex-1')}
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                  />
+                <SchnCalendar range={range} onChange={setRange} locale={locale} />
+                <div className="mt-2 flex items-center gap-3">
+                  <TimeNumberInput value={startHour} max={23} onChange={setStartHour} />
+                  <span className="text-zinc-400">:</span>
+                  <TimeNumberInput value={startMin} max={59} onChange={setStartMin} />
                   <span className="shrink-0 text-zinc-400">→</span>
-                  <input
-                    type="datetime-local"
-                    className={cn(inputCls, 'min-w-0 flex-1')}
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                  />
+                  <TimeNumberInput value={endHour} max={23} onChange={setEndHour} />
+                  <span className="text-zinc-400">:</span>
+                  <TimeNumberInput value={endMin} max={59} onChange={setEndMin} />
                 </div>
                 <SchnButton variant="default" className="mt-2 w-full" onClick={applyCustom}>
                   {t.ok}
                 </SchnButton>
-                <div className="mt-1.5 text-[11px] text-zinc-400">{t.customHint}</div>
               </SchnPopoverContent>
             </SchnPopover>
           </span>

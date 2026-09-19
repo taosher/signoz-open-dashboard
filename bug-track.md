@@ -38,4 +38,7 @@
 | 2026-09-19 | shadcn 按钮裸奔（2px outset 原生边框） | 不引 preflight 后原生 button 样式残留，toggle/ghost 项缺 `border-0` | toggle 项加 `border-0 bg-transparent`，ghost 同改，`.schn button` 补 `font: inherit` | 已解决 | shadcn 回归 |
 | 2026-09-19 | recharts v3 Pie 不认 `center`（中心字偏上） | v3 只认 `cx/cy`，`center` 被静默忽略，饼心恒 50% | 改 `cx="50%" cy="44%"`，与 HTML 叠加层同源对齐 | 已解决 | shadcn 回归 |
 | 2026-09-19 | shadcn 按钮裸奔（2px outset 原生边框、字比 label 大） | 不引 preflight 后 UA 样式残留；且 `font: inherit` 简写（无层）盖掉了 tailwind `text-xs` | 只补 `font-family: inherit`；toggle/ghost 项加 `border-0 bg-transparent` | 已解决 | shadcn 回归 |
+| 2026-09-19 | day-picker 选中日期黑块吞字 | v10 把 selected 画在格子上，按钮保持深色字（类分属两元素） | `.schn [data-selected] > button` 反白 + 去底（light/dark 各一） | 已解决 | shadcn 打磨 |
+| 2026-09-19 | 日历翻月箭头堆在右侧/飘到面板中部 | v10 的 nav 与 months 同级（非 caption 子级），`right-0` 堆叠、`top-1/2` 相对整面板居中 | nav 改 `absolute inset-x-0 top-0 h-9 justify-between`，与标题行等高两端对开 | 已解决 | shadcn 打磨 |
+| 2026-09-19 | 日历月份箭头裸奔（outset 边框） | radix/rdp 导航按钮缺 `border-0`（同一 preflight 坑） | 补 `border-0 bg-transparent` | 已解决 | shadcn 打磨 |
 | 2026-09-19 | 自定义浮层定位飘到左上、灰底只盖工具条 | 浮层放在有 `backdrop-blur` 的工具条内，`fixed inset-0` 以工具条为包含块 | 改 SigNoz 式一体 popover：快选网格 + 自定义同面板，锚定在时间按钮下，无 modal 无全屏灰底 | 已解决 | shadcn 打磨 |

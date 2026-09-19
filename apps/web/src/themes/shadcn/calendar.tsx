@@ -30,18 +30,18 @@ export function SchnCalendar(props: {
         months: 'relative flex flex-col',
         month_caption: 'relative flex items-center justify-center py-1',
         caption_label: 'text-sm font-medium text-zinc-950 dark:text-zinc-50',
-        nav: 'absolute right-0 flex items-center gap-1',
+        nav: 'absolute inset-x-0 top-0 flex h-9 items-center justify-between px-1',
         button_previous:
-          'rounded-md p-1 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900',
+          'rounded-md border-0 bg-transparent p-1 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900',
         button_next:
-          'rounded-md p-1 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900',
+          'rounded-md border-0 bg-transparent p-1 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-400 dark:hover:bg-zinc-900',
         weekdays: 'flex',
-        weekday: 'w-8 py-1 text-center text-[11px] text-zinc-400',
-        month_grid: 'mt-1 border-collapse',
-        week: 'flex',
-        day: 'p-0',
+        weekday: 'flex-1 py-1 text-center text-[11px] text-zinc-400',
+        month_grid: 'mt-1 w-full border-collapse',
+        week: 'flex w-full',
+        day: 'flex-1 p-0',
         day_button:
-          'h-8 w-8 rounded-md border-0 bg-transparent text-xs text-zinc-900 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-50 dark:hover:bg-zinc-900',
+          'h-8 w-full rounded-md border-0 bg-transparent text-xs text-zinc-900 hover:bg-zinc-100 focus-visible:outline-none dark:text-zinc-50 dark:hover:bg-zinc-900',
         selected:
           'bg-zinc-900 text-zinc-50 hover:bg-zinc-900 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50',
         range_start: 'rounded-l-md',
