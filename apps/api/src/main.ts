@@ -10,7 +10,7 @@ async function bootstrap(): Promise<void> {
   const config = app.get(ConfigService);
   const logger = new Logger('bootstrap');
 
-  // 完全公开嵌入是有意为之（设计文档 §10）：frame-ancestors *，CORS *。
+  // Public embedding is intentional (design doc §10): frame-ancestors *, CORS *.
   app.use(
     helmet({
       contentSecurityPolicy: {

@@ -1,4 +1,4 @@
-/** 默认主题装配（设计文档 §7.3：antd + echarts 系自研 UI）。 */
+/** Legacy theme assembly (design doc §7.3: antd + echarts-based custom UI). */
 import { LegacyErrorState } from './LegacyErrorState';
 import { LegacyTokensProvider } from './LegacyTokens';
 import { LegacyToolbar } from './LegacyToolbar';

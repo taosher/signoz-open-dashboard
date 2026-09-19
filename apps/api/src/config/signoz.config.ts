@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
 import * as Joi from 'joi';
 
-/** 环境配置命名空间：signoz（设计文档 §6.1）。 */
+/** Env config namespace: signoz (design doc §6.1). */
 export const signozConfig = registerAs('signoz', () => ({
   baseUrl: (process.env.SIGNOZ_BASE_URL ?? '').replace(/\/+$/, ''),
   apiKey: process.env.SIGNOZ_API_KEY ?? '',

@@ -1,7 +1,7 @@
 /**
- * 嵌入启动（设计文档 §7）：解析 `/embed/:id` 与 URL 参数 → 原生参数归一
- * → replaceState → 主题 registry 选择 → core App 挂载。
- * Key 只放内存（EmbedAuthProvider），不写 localStorage/cookie。
+ * Embed bootstrap (design doc §7): parse `/embed/:id` and URL params → normalize to
+ * native params → replaceState → pick theme from registry → mount core App.
+ * Key lives only in memory (EmbedAuthProvider), never in localStorage/cookie.
  */
 import { isValidDashboardId, parseEmbedParams } from '@signoz-open-dashboard/shared';
 import React from 'react';
@@ -12,7 +12,7 @@ import { EmbedQueryProvider } from './core/queryClient';
 import { errorTitle } from './core/errors';
 import { syncUrl } from './core/replaceState';
 import { resolveTheme } from './themes/registry';
-import { legacyTheme } from './themes/legacy';
+import { shadcnTheme } from './themes/shadcn';
 
 function boot(): void {
   const rootEl = document.getElementById('embed-root');
@@ -24,12 +24,12 @@ function boot(): void {
 
   const renderFatal = (title: string, sub: string): void => {
     const locale = new URLSearchParams(rawSearch).get('locale') === 'en' ? 'en' : 'zh';
-    const Err = legacyTheme.ErrorState;
+    const Err = shadcnTheme.ErrorState;
     createRoot(rootEl).render(
       <React.StrictMode>
-        <legacyTheme.TokensProvider>
+        <shadcnTheme.TokensProvider>
           <Err code="EMBED_DASHBOARD_NOT_FOUND" message={`${title}：${sub}`} retry={false} locale={locale} />
-        </legacyTheme.TokensProvider>
+        </shadcnTheme.TokensProvider>
       </React.StrictMode>,
     );
     void errorTitle;
@@ -45,7 +45,7 @@ function boot(): void {
   }
 
   const params = parseEmbedParams(dashboardId, rawSearch);
-  // 入口一次性翻译为原生参数并 replaceState（含 apiKey 回写规则：入参自带才保留）
+  // Translate entry params to native params once and replaceState (apiKey write-back rule: keep only if present in input)
   syncUrl(window.location.pathname, params, keepKey);
 
   if (params.fullscreen) {

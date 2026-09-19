@@ -1,7 +1,7 @@
 /**
- * shadcn 工具条：标题 + 变量 + 时间（含自定义） + 刷新 + 深浅 + 语言 + 全屏。
- * 全部控件均为 shadcn 形态（radix Select/Popover/ToggleGroup/Checkbox），
- * 时区只展示 UTC 时间，不提供切换。各控制项支持 show/hidden/disabled。
+ * Shadcn toolbar: title + variables + time (with custom) + refresh + color mode + language + fullscreen.
+ * All controls are shadcn-style (radix Select/Popover/ToggleGroup/Checkbox),
+ * timezone only shows UTC times with no switcher. Each control supports show/hidden/disabled.
  */
 import { ChevronDown, Maximize2, Minimize2 } from 'lucide-react';
 import { useState } from 'react';
@@ -14,7 +14,7 @@ import { SchnPopover, SchnPopoverContent, SchnPopoverTrigger, SchnToggleGroup, S
 import { SchnSelectItem, SchnSelectRoot } from './select';
 import { SchnButton, cn } from './ui';
 
-/** 两位数字时间输入（shadcn 风格，无下拉浮层）。失焦时补零并钳制到合法范围。 */
+/** Two-digit time input (shadcn style, no dropdown overlay). Pads with zero and clamps to the valid range on blur. */
 function TimeNumberInput(props: { value: string; max: number; onChange: (v: string) => void }): JSX.Element {
   return (
     <input

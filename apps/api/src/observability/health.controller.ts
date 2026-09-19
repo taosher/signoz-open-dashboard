@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { SkipThrottle } from '@nestjs/throttler';
 
 /**
- * 健康检查（设计文档 §6.3）。
- * /healthz 永不因 Upstream 不可达而 500，只标记 degraded + signozReachable=false。
+ * Health check (design doc §6.3).
+ * /healthz never returns 500 when the upstream is unreachable; it only marks degraded + signozReachable=false.
  */
 @SkipThrottle()
 @Controller('healthz')
@@ -36,7 +36,7 @@ export class HealthController {
         signozReachable = res.ok;
         if (res.ok) {
           const text = await res.text();
-          // version 接口返回纯文本或 JSON，截断存证即可
+          // The version endpoint returns plain text or JSON; a truncated copy is enough for evidence
           signozVersion = text.slice(0, 64);
         }
       } finally {

@@ -1,6 +1,6 @@
 /**
- * iframe-resizer child（设计文档 §4.1）：core 统一接入。
- * 父页未引入时内部滚动，不报错。
+ * iframe-resizer child (design doc §4.1): wired once in core.
+ * When the parent page does not include it, scroll internally without throwing.
  */
 let attached = false;
 

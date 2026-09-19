@@ -1,6 +1,6 @@
 /**
- * ThemeModule 契约（设计文档 §7.2）。新增主题唯一需要实现的接口；
- * core 只依赖该契约，不依赖任何主题的具体组件库。
+ * ThemeModule contract (design doc §7.2). The only interface a new theme must implement;
+ * core depends solely on this contract, never on any theme's concrete component library.
  */
 import type { ComponentType, ReactNode } from 'react';
 import type { ControlVisibility, EmbedLocale, EmbedMode } from '@signoz-open-dashboard/shared';
@@ -14,22 +14,22 @@ export interface ToolbarProps {
   showToolbar: boolean;
   variables: Record<string, DashboardVariable>;
   variableValues: Record<string, unknown>;
-  /** 解析后的候选项（QUERY 经接口取数）；缺省时主题按变量自带值推导。 */
+  /** Resolved options (QUERY fetched via API); when absent the theme derives from the variable's own values. */
   variableOptions?: Record<string, (string | number | boolean)[]>;
   onVariableChange: (name: string, value: unknown) => void;
-  /** 深浅色（可选扩展，设计文档 §7.2；新主题可忽略）。 */
+  /** Color mode (optional extension, design doc §7.2; new themes may ignore). */
   mode?: EmbedMode;
   onModeChange?: (mode: EmbedMode) => void;
-  /** 各控制项三态（设计文档 §4.1，缺省 show）。 */
+  /** Tri-state for each control (design doc §4.1, default show). */
   timeControl?: ControlVisibility;
   refreshControl?: ControlVisibility;
   modeControl?: ControlVisibility;
   fullscreenControl?: ControlVisibility;
   localeControl?: ControlVisibility;
-  /** 语言与切换（legacy 提供工具条中英切换）。 */
+  /** Locale and switching (each theme provides its own locale switch). */
   locale?: EmbedLocale;
   onLocaleChange?: (locale: EmbedLocale) => void;
-  /** 全屏状态与切换（core 监听 fullscreenchange 同步）。 */
+  /** Fullscreen state and toggle (core syncs on fullscreenchange). */
   isFullscreen?: boolean;
   onFullscreenToggle?: () => void;
   relativeTime: string | null;
@@ -48,9 +48,9 @@ export interface WidgetProps {
   onRetry: () => void;
   startMs: number;
   endMs: number;
-  /** 有旧数据时的后台取数中（可选扩展，主题可弱提示；缺省忽略）。 */
+  /** Background refetch with stale data (optional extension, theme may show a subtle hint; ignored by default). */
   refreshing?: boolean;
-  /** 语言（空态/弱提示文案跟随；缺省 zh）。 */
+  /** Locale (empty-state/subtle-hint copy follows it; defaults to zh). */
   locale?: EmbedLocale;
 }
 

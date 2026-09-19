@@ -1,6 +1,6 @@
 /**
- * 时间语义（设计文档 §4.1 / §7.4-4）。默认 `now-30m~now` UTC。
- * 原生参数 `relativeTime`（如 `30m`）或 `startTime+endTime`（epoch 秒）。
+ * Time semantics (design doc §4.1 / §7.4-4). Defaults to `now-30m~now` UTC.
+ * Native params: `relativeTime` (e.g. `30m`) or `startTime+endTime` (epoch seconds).
  */
 import type { ParsedEmbedParams } from '@signoz-open-dashboard/shared';
 
@@ -51,7 +51,7 @@ export function resolveTimeRange(p: Pick<ParsedEmbedParams, 'relativeTime' | 'st
   return { startMs: nowMs - 30 * 60 * 1000, endMs: nowMs };
 }
 
-/** refresh（`off`/`30s`/`1m`…）转轮询毫秒数；`off`/`inherit` 返回 null（不轮询）。 */
+/** Convert refresh (`off`/`30s`/`1m`…) to polling milliseconds; `off`/`inherit` returns null (no polling). */
 export function refreshToMs(refresh: string): number | null {
   if (refresh === 'off' || refresh === 'inherit') return null;
   const m = /^(\d+)(s|m|h)?$/.exec(refresh.trim());

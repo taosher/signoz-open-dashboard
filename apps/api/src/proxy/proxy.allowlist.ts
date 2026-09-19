@@ -1,6 +1,6 @@
 /**
- * 代理白名单（设计文档 §6.2）。默认拒绝，显式允许才透传。
- * 上游 path 均为 SigNoz 原生 path（/api/vX/...），NestJS 仅剥离 /api/signoz 前缀。
+ * Proxy allowlist (design doc §6.2). Deny by default, forward only when explicitly allowed.
+ * Upstream paths are all native SigNoz paths (/api/vX/...); NestJS only strips the /api/signoz prefix.
  */
 export type ProxyDecision =
   | { allowed: true }
@@ -12,10 +12,10 @@ export function decideProxy(method: string, upstreamPath: string): ProxyDecision
   const m = method.toUpperCase();
   const p = upstreamPath.split('?')[0];
 
-  // Dashboard：仅允许 GET 单个（含 /lock 后缀显式拒绝为 READONLY）
+  // Dashboards: only GET single dashboard is allowed (explicit /lock suffix denial maps to READONLY)
   if (p.startsWith('/api/v1/dashboards')) {
     if (m === 'GET' && DASHBOARD_ID_RE.test(p)) return { allowed: true };
-    // 明确的写操作提示 READONLY，其余一律 BLOCKED
+    // Explicit write operations map to READONLY, everything else maps to BLOCKED
     if (
       m === 'POST' ||
       m === 'PUT' ||
@@ -28,7 +28,7 @@ export function decideProxy(method: string, upstreamPath: string): ProxyDecision
     return { allowed: false, code: 'EMBED_BLOCKED' };
   }
 
-  // 查询类：POST 透传
+  // Query APIs: forward POST
   if (
     m === 'POST' &&
     (p === '/api/v3/query_range' ||
@@ -42,8 +42,8 @@ export function decideProxy(method: string, upstreamPath: string): ProxyDecision
     return { allowed: true };
   }
 
-  // 元信息：GET 透传（healthz 探测 version 不经过代理也可用，但前端直调时需要）
-  // DYNAMIC 型变量候选（设计文档 §6.2）：GET /api/v1/fields/values?signal=&name=
+  // Metadata: forward GET (healthz probes version without the proxy too, but direct frontend calls need it)
+  // DYNAMIC variable candidates (design doc §6.2): GET /api/v1/fields/values?signal=&name=
   if (
     m === 'GET' &&
     (p === '/api/v1/version' ||

@@ -1,5 +1,5 @@
 /**
- * Dashboard 首屏取数（设计文档 §6.2：`GET /api/v1/dashboards/:id` 透传）。
+ * Dashboard first-screen fetch (design doc §6.2: `GET /api/v1/dashboards/:id` passthrough).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiFetch } from './api';
@@ -35,7 +35,7 @@ export function useDashboard(): DashboardState {
     })
       .then((json) => {
         const d = unwrapDashboard(json);
-        if (!d) throw Object.assign(new Error('Dashboard 数据格式异常'), { code: 'EMBED_UPSTREAM_UNAVAILABLE', httpStatus: 502 });
+        if (!d) throw Object.assign(new Error('Malformed dashboard payload'), { code: 'EMBED_UPSTREAM_UNAVAILABLE', httpStatus: 502 });
         if (d.id === '') d.id = dashboardId;
         setDashboard(d);
       })

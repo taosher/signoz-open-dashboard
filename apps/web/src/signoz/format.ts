@@ -1,6 +1,6 @@
 /**
- * 单位格式化（自研实现，对照 SigNoz grafana 单位体系的常用子集）。
- * 覆盖冒烟看板的 `percentunit/bytes/none`，其余原样输出数字。
+ * Unit formatting (custom implementation covering the common subset of the SigNoz grafana unit system).
+ * Covers the smoke dashboard's `percentunit/bytes/none`; other units output the raw number.
  */
 export function formatValue(value: number, unit?: string): string {
   if (!Number.isFinite(value)) return '-';

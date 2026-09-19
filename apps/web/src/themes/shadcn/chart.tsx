@@ -1,7 +1,7 @@
 /**
- * shadcn 风格图表（对照 https://ui.shadcn.com/docs/components/base/chart ：
- * Recharts v3 做渲染，`ChartContainer/ChartTooltipContent/ChartLegendContent`
- * 只做主题与排版，不包新抽象；单位格式化经 `formatValue` 注入）。
+ * Shadcn-style charts (mirroring https://ui.shadcn.com/docs/components/base/chart:
+ * Recharts v3 for rendering; `ChartContainer/ChartTooltipContent/ChartLegendContent`
+ * only handle theming and layout without new abstractions; unit formatting injected via `formatValue`).
  */
 import { ResponsiveContainer, Legend } from 'recharts';
 import type { ReactNode } from 'react';
@@ -9,7 +9,7 @@ import { formatValue } from '../../signoz/format';
 
 export type ChartConfig = Record<string, { label?: string; color?: string }>;
 
-/** 明暗各 8 色：蓝色打头保证主题感，其余拉开色相/明度保证多 series 可辨（见 bug-track）。 */
+/** 8 colors for light/dark each: blue first for theme feel, rest spread across hue/lightness to keep many series distinguishable (see bug-track). */
 export const SCHN_CHART_COLORS_LIGHT = [
   '#2563eb',
   '#0d9488',
@@ -31,7 +31,7 @@ export const SCHN_CHART_COLORS_DARK = [
   '#22d3ee',
 ];
 
-/** 图例/tooltip 超长收敛：最多展示项数，超出以 `+N` 收尾（40+ series 不再撑爆布局）。 */
+/** Legend/tooltip truncation for long lists: max items shown, overflow collapsed as `+N` (40+ series no longer blows up layout). */
 export const MAX_LEGEND_ITEMS = 12;
 
 export function ChartContainer({

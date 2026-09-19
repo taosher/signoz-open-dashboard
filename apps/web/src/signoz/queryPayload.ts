@@ -1,7 +1,7 @@
 /**
- * v5 payload 装配（对照快照 `prepareQueryRangePayloadV5`，逻辑一致即可）。
- * 输入为看板 widget 原样 query（builder/formula/promql/CH 信封），
- * `start/end` 为毫秒；table 置 `formatTableResultForUI=true`。
+ * v5 payload assembly (mirrors snapshot `prepareQueryRangePayloadV5`; logic equivalence is enough).
+ * Input is the dashboard widget's raw query (builder/formula/promql/CH envelopes),
+ * `start/end` in milliseconds; tables set `formatTableResultForUI=true`.
  */
 import { mapPanelTypeToRequestType } from './panels';
 import type { BuilderQueryItem, EmbedWidget } from '../core/dashboard';
@@ -108,13 +108,13 @@ function toBuilderEnvelopes(items: BuilderQueryItem[], requestType: string, pane
         },
       ];
     } else if (requestType === 'raw') {
-      // raw 不带聚合（与原生一致）
+      // raw carries no aggregations (matches native)
     } else {
       const aggs = (q.aggregations as { expression?: string; alias?: string }[] | undefined) ?? [];
       spec.aggregations =
         aggs.length > 0 ? aggs.map((a) => ({ expression: a.expression ?? 'count()', alias: a.alias })) : [{ expression: 'count()' }];
     }
-    // 清理 undefined（保持信封干净）
+    // Strip undefined (keep the envelope clean)
     for (const k of Object.keys(spec)) {
       if (spec[k] === undefined) delete spec[k];
     }
@@ -163,9 +163,9 @@ export function buildQueryRangePayload(
       if (o.legend) legendMap[o.queryName] = o.legend;
       envelopes.push({ type: 'builder_trace_operator', spec: { name: o.queryName, expression: o.expression } });
     }
-  // 注意：看板 JSON 里每个 widget 恒带 `promql: [{query: ''}]` /
-  // `clickhouse_sql: [{query: ''}]` 占位数组，只能按 queryType 分发，
-  // 不能按数组存在性判断（否则 clickhouse_sql 会被空 promql 占位吞掉）。
+  // Note: every widget in dashboard JSON always carries `promql: [{query: ''}]` /
+  // `clickhouse_sql: [{query: ''}]` placeholder arrays; dispatch only by queryType,
+  // never by array presence (or the empty promql placeholder would swallow clickhouse_sql).
   } else if (query.queryType === 'promql') {
     const list = (query.promql as { query: string; legend?: string; name?: string; disabled?: boolean }[] | undefined) ?? [];
     list.forEach((item, idx) => {

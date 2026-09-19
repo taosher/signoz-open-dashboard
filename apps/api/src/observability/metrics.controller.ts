@@ -4,7 +4,7 @@ import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { MetricsService } from './metrics.service';
 
-/** Prometheus 指标（设计文档 §6.3）。跳过全局限流见 AppModule。 */
+/** Prometheus metrics (design doc §6.3). See AppModule for the global rate-limit bypass. */
 @SkipThrottle()
 @Controller('metrics')
 export class MetricsController {

@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'crypto';
 
-/** 从请求中解析 effectiveKey。优先级：header > query > env（设计文档 §6.2）。 */
+/** Resolve effectiveKey from the request. Priority: header > query > env (design doc §6.2). */
 export function resolveEffectiveKey(opts: {
   headerKey?: string;
   queryKey?: string;
@@ -18,13 +18,13 @@ export function resolveEffectiveKey(opts: {
   return { key: '', source: 'none' };
 }
 
-/** Key 哈希前 8 位，仅用于排障，永不记明文。 */
+/** First 8 chars of the key hash, for troubleshooting only; never log the plaintext key. */
 export function hashKeyPrefix8(key: string): string {
   if (!key) return 'none';
   return createHash('sha256').update(key).digest('hex').slice(0, 8);
 }
 
-/** 脱敏 query（大小写不敏感），用于日志与指标标签。 */
+/** Sanitize query (case-insensitive) for logs and metric labels. */
 export function sanitizeQuery(
   query: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -44,7 +44,7 @@ export function ensureRequestId(incoming?: string): string {
   return randomUUID();
 }
 
-/** 从上游 path 中提取 dashboardId（供日志），失败返回 undefined。 */
+/** Extract dashboardId from the upstream path (for logs); return undefined on failure. */
 export function extractDashboardId(upstreamPath: string): string | undefined {
   const m = upstreamPath.match(/^\/api\/v1\/dashboards\/([^/]+)/);
   return m ? decodeURIComponent(m[1]) : undefined;

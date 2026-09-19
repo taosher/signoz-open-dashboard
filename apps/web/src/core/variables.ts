@@ -1,15 +1,15 @@
 /**
- * 看板变量解析（设计文档 §4.1 `var-*` / §7.4-4）。
- * 优先级：URL `var-*` > 看板 selectedValue > 解析默认值。
- * 变量一律按 `name` 归一（看板 JSON 以 id 为键，`normalizeVariables` 转为名键）。
+ * Dashboard variable resolution (design doc §4.1 `var-*` / §7.4-4).
+ * Priority: URL `var-*` > dashboard selectedValue > resolved default.
+ * Variables are always normalized by `name` (dashboard JSON keys by id, `normalizeVariables` converts to name keys).
  *
- * 类型：
- * - QUERY：经 `POST /api/v2/variables/query` 取候选值（依赖其他变量时先代入已知值）；
- * - DYNAMIC：经 `GET /api/v1/fields/values` 取 `normalizedValues`
- *  （source 为 All telemetry 时不限 signal）；
- * - CUSTOM：`customValue` 逗号切分；TEXTBOX：`textboxValue`；其他仅用自带值。
- * 默认选中：单选取 `defaultValue`（候选中）否则首个候选；多选默认全选候选
- * （`allSelected`/`showALLOption` 语义，嵌入页无历史选择时展示全量数据）。
+ * Types:
+ * - QUERY: fetch candidates via `POST /api/v2/variables/query` (substitute known values first when depending on other variables);
+ * - DYNAMIC: fetch `normalizedValues` via `GET /api/v1/fields/values`
+ *   (no signal restriction when source is All telemetry);
+ * - CUSTOM: split `customValue` by comma; TEXTBOX: `textboxValue`; others use built-in values only.
+ * Default selection: single takes `defaultValue` (when in candidates) else the first candidate; multi defaults to all candidates
+ * (`allSelected`/`showALLOption` semantics, showing full data when the embed has no historical selection).
  */
 import { apiFetch } from './api';
 import type { DashboardVariable } from './dashboard';
@@ -37,7 +37,7 @@ function quoteIdent(v: string | number | boolean): string {
   return String(v);
 }
 
-/** 依赖查询文本的本地预代入：字符串加引号（`$var` 在 filter 中由后端自行处理，此处只管 SQL 文本）。 */
+/** Local pre-substitution for dependent query text: quote strings (`$var` inside filters is handled by the backend; only SQL text is handled here). */
 function formatValueForQuery(v: unknown): string {
   if (Array.isArray(v)) return v.map((x) => quoteIdent(x as string | number | boolean)).join(',');
   if (v === null || v === undefined) return '';
@@ -67,7 +67,7 @@ function toArray(v: unknown): (string | number | boolean)[] {
   return [];
 }
 
-/** 看板 JSON 的 variables 以 id 为键，此处按 `name` 归一（无名则弃）。 */
+/** Dashboard JSON `variables` keys by id; normalize by `name` here (drop unnamed). */
 export function normalizeVariables(
   vars: Record<string, DashboardVariable> | undefined,
 ): Record<string, DashboardVariable> {
@@ -129,7 +129,7 @@ async function fetchDynamicOptions(
   void time;
   const list = json.data?.normalizedValues;
   if (Array.isArray(list)) return list;
-  // 兜底：values 按类型合并
+  // Fallback: merge values by type
   const out: (string | number | boolean)[] = [];
   for (const arr of Object.values(json.data?.values ?? {})) {
     if (Array.isArray(arr)) out.push(...arr);
@@ -151,7 +151,7 @@ export async function resolveVariables(
   const options: VariableOptions = {};
   if (!vars) return { values, options };
 
-  // URL 优先（multiSelect 按逗号切分）
+  // URL first (multiSelect split by comma)
   const entries = Object.entries(vars).sort(
     ([, a], [, b]) => Number(a.order ?? 0) - Number(b.order ?? 0),
   );
@@ -170,7 +170,7 @@ export async function resolveVariables(
     }
   }
 
-  // 多轮解析（依赖变量先出结果，最多 N+1 轮）
+  // Multi-pass resolution (dependent variables resolve first, up to N+1 passes)
   let rest = pending;
   for (let pass = 0; pass <= pending.length && rest.length > 0; pass += 1) {
     const next: [string, DashboardVariable][] = [];
@@ -210,7 +210,7 @@ export async function resolveVariables(
           values[name] = t;
           progressed = true;
         } else {
-          // TEXTBOX 之外其他类型：仅用自带值
+          // Other types besides TEXTBOX: use built-in values only
           if (v.selectedValue !== undefined && v.selectedValue !== null) {
             values[name] = v.selectedValue;
             options[name] = toArray(v.selectedValue);
@@ -228,7 +228,7 @@ export async function resolveVariables(
     if (!progressed) break;
   }
 
-  // dashboard 自带 selectedValue（非 URL）：候选就绪后若自带值有效则覆盖
+  // Dashboard built-in selectedValue (non-URL): override when the built-in value is valid after candidates are ready
   for (const [, v] of pending) {
     const name = v.name as string;
     if (opts.urlVars[name] !== undefined) continue;
@@ -245,7 +245,7 @@ export async function resolveVariables(
 
 function pickDefault(v: DashboardVariable, list: (string | number | boolean)[]): unknown {
   if (v.multiSelect) {
-    // 多选默认全选（嵌入无历史选择时展示全量）
+    // Multi defaults to all (show full data when the embed has no historical selection)
     if (list.length > 0) return [...list];
     return v.selectedValue ?? [];
   }

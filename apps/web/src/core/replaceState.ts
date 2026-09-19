@@ -1,6 +1,6 @@
 /**
- * replaceState 回写（设计文档 §4.1）：原生参数 + `var-*`，
- * 入参自带 key 才保留，否则不追加 env 默认 key。
+ * replaceState write-back (design doc §4.1): native params + `var-*`,
+ * keep the key only when it was present in the input; never append the env-default key.
  */
 import type { ParsedEmbedParams } from '@signoz-open-dashboard/shared';
 import { serializeEmbedParams } from '@signoz-open-dashboard/shared';

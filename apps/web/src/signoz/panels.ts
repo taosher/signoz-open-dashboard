@@ -1,6 +1,6 @@
 /**
- * panel/requestType 映射（对照快照 `constants/queryBuilder.ts PANEL_TYPES`
- * + `prepareQueryRangePayloadV5.mapPanelTypeToRequestType`，逻辑一致）。
+ * panel/requestType mapping (mirrors snapshot `constants/queryBuilder.ts PANEL_TYPES`
+ * + `prepareQueryRangePayloadV5.mapPanelTypeToRequestType`; logic equivalence is enough).
  */
 export const PANEL_TYPES = {
   TIME_SERIES: 'graph',

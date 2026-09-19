@@ -4,8 +4,8 @@ import { join } from 'path';
 import { createReadStream, existsSync } from 'fs';
 
 /**
- * SPA 入口：/embed/:dashboardId 返回 web 构建产物 index.html，
- * 实际数据由浏览器经 /api/signoz 同源接口加载。
+ * SPA entry: /embed/:dashboardId serves the web build output index.html,
+ * real data is loaded by the browser via the same-origin /api/signoz API.
  */
 @Controller('embed')
 export class EmbedController {
@@ -15,7 +15,7 @@ export class EmbedController {
     if (!existsSync(index)) {
       res.status(503).json({
         code: 'EMBED_BAD_REQUEST',
-        message: '前端产物缺失，请先构建 apps/web 并同步 web-dist',
+        message: 'Frontend assets missing, build apps/web and sync web-dist first',
       });
       return;
     }

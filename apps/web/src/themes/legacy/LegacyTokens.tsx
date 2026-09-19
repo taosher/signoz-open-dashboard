@@ -1,4 +1,4 @@
-/** legacy 主题 token（antd ConfigProvider；dark 时切暗算法；页面底色/间距经 CSS 变量提供）。 */
+/** Legacy theme tokens (antd ConfigProvider; dark switches to the dark algorithm; page background/padding via CSS vars). */
 import { ConfigProvider, theme as antdTheme } from 'antd';
 import type { ReactNode } from 'react';
 import { useColorMode } from '../../core/colorMode';

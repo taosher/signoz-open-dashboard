@@ -1,4 +1,4 @@
-/** EMBED_ 错误码空态 + Retry + requestId（样式由主题表达，标题跟随 locale）。 */
+/** EMBED_ error-code empty state + Retry + requestId (styling by theme, title follows locale). */
 import { Button, Result } from 'antd';
 import { errorTitle, type ErrorProps } from '../../core/errors';
 

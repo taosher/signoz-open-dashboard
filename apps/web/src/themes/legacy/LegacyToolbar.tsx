@@ -1,7 +1,7 @@
 /**
- * legacy 极简工具条：标题 + 变量下拉 + 时间选择（含自定义） + 刷新 +
- * 深浅色 + 语言 + 全屏切换。时区强制 UTC（只展示 UTC 时间，不提供切换）。
- * 各控制项支持 show/hidden/disabled（设计文档 §4.1）。
+ * Legacy minimal toolbar: title + variable dropdowns + time picker (with custom) + refresh +
+ * color mode + language + fullscreen toggles. Timezone is forced to UTC (only UTC times shown, no switcher).
+ * Each control supports show/hidden/disabled (design doc §4.1).
  */
 import { Button, DatePicker, Modal, Segmented, Select, Space } from 'antd';
 import { Maximize2, Minimize2 } from 'lucide-react';

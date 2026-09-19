@@ -1,14 +1,14 @@
 /**
- * v5 响应解析（对照快照 `convertV5Response` + `getLabelName`/`getLegend` 口径）：
- * `time_series`（results→series→labels/values）、`scalar`（columns+data）、
- * `raw`、`distribution`。
+ * v5 response parsing (mirrors snapshot `convertV5Response` + `getLabelName`/`getLegend` semantics):
+ * `time_series` (results→series→labels/values), `scalar` (columns+data),
+ * `raw`, `distribution`.
  *
- * 图例规则（与控制台一致）：
- * - 有模板（如 `{{mountpoint}}`）：按 series labels 替换；
- * - 空模板 + labels：单 label 取 bare value，多 label 取 `k="v"` 拼接；
- * - 空模板 + 无 labels：取 widget legend（legendMap），再无则 queryName。
- * 注意：response aggregation 自带的 `alias` 是后端内部名（如 `__result_0`），
- * 时序图例必须忽略它（只在 scalar 列名中用 widget 侧 alias，见 getColName）。
+ * Legend rules (same as console):
+ * - With template (e.g. `{{mountpoint}}`): substitute from series labels;
+ * - Empty template + labels: single label takes the bare value, multiple labels join as `k="v"`;
+ * - Empty template + no labels: take widget legend (legendMap), else queryName.
+ * Note: the response aggregation's own `alias` is a backend-internal name (e.g. `__result_0`);
+ * time-series legends must ignore it (widget-side alias is only used for scalar column names, see getColName).
  */
 export interface UiSeries {
   queryName: string;
@@ -29,8 +29,8 @@ function labelText(labels: { key?: { name?: string }; value?: unknown }[] | unde
 }
 
 /**
- * 时序 series 命名（对照 `getLabelName` + `getLegend` 的可观察行为）。
- * 示例：模板 `{{mountpoint}}` + labels `{mountpoint: /boot/efi}` → `/boot/efi`。
+ * Time-series naming (mirrors observable behavior of `getLabelName` + `getLegend`).
+ * Example: template `{{mountpoint}}` + labels `{mountpoint: /boot/efi}` → `/boot/efi`.
  */
 export function formatSeriesLegend(
   queryName: string,
@@ -162,8 +162,8 @@ export function parseV5Response(
   const results = ((inner.results as Record<string, unknown>[] | undefined) ?? (data.results as Record<string, unknown>[] | undefined) ?? []);
   if (type === 'time_series') return { type, series: parseTimeSeries(results, legendMap), tables: [], rawCount: 0 };
   if (type === 'scalar') {
-    // scalar 有两种形态：列式（columns+data，表格类）与序列式
-    //（aggregations+series，pie/value 类，原生走 convertTimeSeriesData 分支）
+    // scalar has two shapes: columnar (columns+data, table-like) and series-like
+    // (aggregations+series, pie/value-like, native takes the convertTimeSeriesData branch)
     const columnar = results.filter(
       (r) => Array.isArray((r as Record<string, unknown>).columns),
     );

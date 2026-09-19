@@ -17,9 +17,9 @@ import {
 } from './proxy.util';
 
 /**
- * 全量透传控制器（设计文档 §6.2）。
- * 路由：ALL /api/signoz/* → stripPrefix → SIGNOZ_BASE_URL + path。
- * 前端禁止直连 Upstream，一律走同源 /api/signoz。
+ * Full pass-through controller (design doc §6.2).
+ * Route: ALL /api/signoz/* → stripPrefix → SIGNOZ_BASE_URL + path.
+ * The frontend must never call the upstream directly; always use same-origin /api/signoz.
  */
 @Controller('api/signoz')
 export class SignozProxyController {
@@ -30,7 +30,7 @@ export class SignozProxyController {
 
   @All('*')
   async proxyAll(@Req() req: Request, @Res() res: Response): Promise<void> {
-    // Express 在 Controller('api/signoz') + @All('*') 下，req.path 为全路径
+    // Under Express with Controller('api/signoz') + @All('*'), req.path holds the full path
     const fullPath: string = (req as unknown as { path: string }).path ?? req.url;
     const prefix = '/api/signoz';
     const upstreamPath = fullPath.startsWith(prefix)
@@ -44,7 +44,7 @@ export class SignozProxyController {
       (req.headers['x-request-id'] as string) ?? '',
     );
     res.setHeader('x-embed-request-id', requestId);
-    // requestId 透传给日志拦截器
+    // Propagate requestId to the logging interceptor
     (req as unknown as Record<string, unknown>).__embedRequestId = requestId;
 
     const decision = decideProxy(req.method, upstreamPath.split('?')[0]);
@@ -58,8 +58,8 @@ export class SignozProxyController {
           code: decision.code,
           message:
             decision.code === 'EMBED_READONLY'
-              ? '嵌入页为只读，该写操作不可用'
-              : '该接口未在嵌入白名单内',
+              ? 'Embed page is read-only, this write operation is unavailable'
+              : 'This endpoint is not in the embed allowlist',
           requestId,
           path: upstreamPath.split('?')[0],
         },
@@ -78,7 +78,7 @@ export class SignozProxyController {
       queryKey,
       envKey,
     });
-    // 供日志拦截器使用（只记 source + hash8，不记明文）
+    // For the logging interceptor (log source + hash8 only, never the plaintext key)
     (req as unknown as Record<string, unknown>).__embedKeySource = source;
     (req as unknown as Record<string, unknown>).__embedKeyHash =
       hashKeyPrefix8(effectiveKey);
@@ -87,7 +87,7 @@ export class SignozProxyController {
       throw new HttpException(
         {
           code: 'EMBED_MISSING_API_KEY',
-          message: '缺少 API Key：URL 加 ?apiKey= 或配置服务端 SIGNOZ_API_KEY',
+          message: 'Missing API Key: append ?apiKey= to the URL or set server-side SIGNOZ_API_KEY',
           requestId,
           path: upstreamPath.split('?')[0],
         },
@@ -95,8 +95,8 @@ export class SignozProxyController {
       );
     }
 
-    // 注意：Express/Nest 默认 json bodyParser 已消费请求流，
-    // 此处不可再监听 req 'data'/'end'（会永久挂起），直接用已解析的 req.body。
+    // Note: the default Express/Nest JSON bodyParser has already consumed the request stream,
+    // so do not listen for req 'data'/'end' here (it would hang forever); use the parsed req.body directly.
     const parsedBody: unknown = (req as unknown as { body?: unknown }).body;
     let body: Buffer | undefined;
     if (
@@ -122,7 +122,7 @@ export class SignozProxyController {
       effectiveKey,
     });
 
-    // 认证类错误归一；其余原样透传（含 query_range 业务错误体）
+    // Normalize auth errors; pass everything else through untouched (including query_range business error bodies)
     const mapped = mapUpstreamError(
       upstreamPath.split('?')[0],
       upstream.status,

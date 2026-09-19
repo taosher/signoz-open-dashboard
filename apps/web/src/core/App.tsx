@@ -1,6 +1,6 @@
 /**
- * 嵌入主应用（core 编排 + 主题渲染，设计文档 §7.4）。
- * 路由仅 `/embed/:dashboardId`（由 main.tsx 解析传入）。
+ * Embed main app (core orchestration + theme rendering, design doc §7.4).
+ * Only route is `/embed/:dashboardId` (parsed and passed in by main.tsx).
  */
 import { ConfigProvider, Empty, Spin } from 'antd';
 import enUS from 'antd/locale/en_US';
@@ -96,7 +96,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
     [timeState, tick],
   );
 
-  // 变量：解析一次（timeKey 变化才重解，不随轮询 tick），用户改选覆盖
+  // Variables: resolve once (re-resolve only when timeKey changes, not on polling ticks); user selections override
   const timeKeyForVars =
     'relativeTime' in timeState ? timeState.relativeTime : `${timeState.startTime}-${timeState.endTime}`;
   const varsDef = useMemo(
@@ -116,7 +116,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
   );
   const varsReady = !dash.loading && !resolvedVars.loading;
 
-  // 状态变更回写地址栏（原生参数，不回写 env 默认 key；数组按逗号拼接）
+  // Write state changes back to the address bar (native params, never write back the env-default key; arrays joined by comma)
   useEffect(() => {
     syncUrl(
       pathname,
@@ -137,7 +137,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeState, refresh, mode, locale, varValues]);
 
-  // 预热 substitute_vars（有变量时）：失败不阻塞渲染
+  // Warm up substitute_vars (when variables exist): failures never block rendering
   useEffect(() => {
     if (!dash.dashboard || Object.keys(varValues).length === 0) return;
     void apiFetch('/api/v5/substitute_vars', {
@@ -177,7 +177,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
   const dd = dash.dashboard.data;
   const widgets = (dd.widgets ?? []).filter((w) => String(w.panelTypes) !== 'row' && w.id);
   const layoutById = new Map((dd.layout ?? []).map((l) => [l.i, l]));
-  // 按看板 layout (y,x) 排序后再按 w 跨列，复刻控制台排版（App 只做顺序+跨列，不解释 x 偏移）
+  // Sort by dashboard layout (y,x) then span columns by w, replicating console layout (App only orders + spans, never interprets x offsets)
   const ordered = [...widgets].sort((a, b) => {
     const la = layoutById.get(a.id);
     const lb = layoutById.get(b.id);
@@ -224,8 +224,8 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
         isFullscreen={isFullscreen}
         onFullscreenToggle={toggleFullscreen}
       />
-      {/* 页面底色/间距由主题经 CSS 变量提供（--embed-page-bg/--embed-page-pad/--embed-grid-gap），core 只给 fallback。
-          12 列 grid 按看板 layout 跨列（gap 由 grid 原生处理，无需 calc 抵扣，换 gap 不会再挤换行，见 bug-track） */}
+      {/* Page background/padding come from the theme via CSS vars (--embed-page-bg/--embed-page-pad/--embed-grid-gap); core only provides fallbacks.
+          12-column grid spans by dashboard layout (gap handled natively by grid, no calc deduction needed; changing gap no longer wraps, see bug-track) */}
       <div style={{ padding: 'var(--embed-page-pad, 12px)' }}>
         {ordered.length === 0 ? (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={false} />

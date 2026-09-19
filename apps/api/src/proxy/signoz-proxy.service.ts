@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-/** 上游错误归一（设计文档 §6.3）。query_range 的业务错误透传原 body，仅认证类映射。 */
+/** Normalize upstream errors (design doc §6.3). query_range business errors pass through with the original body; only auth errors are mapped. */
 export function mapUpstreamError(
   upstreamPath: string,
   upstreamStatus: number,
@@ -16,7 +16,7 @@ export function mapUpstreamError(
     return new HttpException(
       {
         code: 'EMBED_INVALID_API_KEY',
-        message: 'API Key 无效或无查看权限',
+        message: 'API Key is invalid or lacks view permission',
         requestId,
         upstreamStatus,
         path: upstreamPath,
@@ -31,7 +31,7 @@ export function mapUpstreamError(
     return new HttpException(
       {
         code: 'EMBED_DASHBOARD_NOT_FOUND',
-        message: 'Dashboard 不存在或已被删除',
+        message: 'Dashboard does not exist or has been deleted',
         requestId,
         upstreamStatus,
         path: upstreamPath,
@@ -60,7 +60,7 @@ export class SignozProxyService {
     return this.config.get<number>('signoz.metaTimeoutMs') ?? 10000;
   }
 
-  /** 透传请求到 Upstream，返回 { status, headers, body }。调用方负责写回 Response。 */
+  /** Forward the request to the upstream, returning { status, headers, body }. The caller writes it back to the Response. */
   async forward(opts: {
     upstreamPath: string;
     queryString: string;
@@ -105,7 +105,7 @@ export class SignozProxyService {
         throw new HttpException(
           {
             code: 'EMBED_UPSTREAM_UNAVAILABLE',
-            message: 'SigNoz 后端超时',
+            message: 'SigNoz backend timed out',
             path: opts.upstreamPath,
           },
           HttpStatus.GATEWAY_TIMEOUT,
@@ -115,7 +115,7 @@ export class SignozProxyService {
       throw new HttpException(
         {
           code: 'EMBED_UPSTREAM_UNAVAILABLE',
-          message: 'SigNoz 后端不可达',
+          message: 'SigNoz backend unreachable',
           path: opts.upstreamPath,
         },
         HttpStatus.BAD_GATEWAY,

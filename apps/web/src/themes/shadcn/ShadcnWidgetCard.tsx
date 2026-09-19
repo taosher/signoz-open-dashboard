@@ -1,7 +1,7 @@
 /**
- * shadcn WidgetCard：按 panelTypes 分发（graph/table/list/pie/bar/histogram/value）。
- * 时序/柱状/饼图用 Recharts（对照 ui.shadcn chart：ChartContainer 组合），
- * 表格用 shadcn 风格 table，单位格式化复用 `signoz/format`。
+ * Shadcn WidgetCard: dispatch by panelTypes (graph/table/list/pie/bar/histogram/value).
+ * Time-series/bar/pie use Recharts (mirroring ui.shadcn chart: ChartContainer composition),
+ * tables use shadcn-style table; unit formatting reuses `signoz/format`.
  */
 import {
   Area,

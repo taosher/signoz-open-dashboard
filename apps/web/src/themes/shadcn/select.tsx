@@ -1,6 +1,6 @@
 /**
- * shadcn Select（radix）。portal 内容自带 `.schn(-dark)` 类，
- * 脱离主题包裹层时深色仍生效。
+ * Shadcn Select (radix). Portal content carries its own `.schn(-dark)` classes,
+ * so dark mode still applies outside the theme wrapper.
  */
 import * as SelectPrimitive from '@radix-ui/react-select';
 import { Check, ChevronDown } from 'lucide-react';

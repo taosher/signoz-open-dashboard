@@ -1,6 +1,6 @@
 /**
- * 嵌入错误码：前后端共用。
- * 约定：httpStatus 供 NestJS 抛 HttpException，code 供前端空态映射。
+ * Embed error codes: shared by frontend and backend.
+ * Convention: httpStatus is for NestJS HttpException, code is for frontend empty-state mapping.
  */
 export const EMBED_ERROR_CODES = {
   MISSING_API_KEY: 'EMBED_MISSING_API_KEY',

@@ -1,6 +1,6 @@
 /**
- * legacy 主题中英文案（`locale` 由 URL/切换器决定，core 不规定，见设计文档 §4.1）。
- * 看板数据（标题/变量名）跟随上游，不在此翻译。
+ * Legacy theme en/zh copy (`locale` decided by URL/switcher, core does not dictate it, see design doc §4.1).
+ * Dashboard data (titles/variable names) follows upstream and is never translated here.
  */
 import type { EmbedErrorCode, EmbedLocale } from '@signoz-open-dashboard/shared';
 

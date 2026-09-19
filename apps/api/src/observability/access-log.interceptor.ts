@@ -15,9 +15,9 @@ import {
 import { MetricsService } from './metrics.service';
 
 /**
- * 脱敏访问日志拦截器（设计文档 §6.3）。
- * 记录：method、上游 path（query 脱敏）、dashboardId、upstreamStatus、耗时、
- * effectiveKeySource/Hash8、UA、referer。永不记明文 Key。
+ * Redacted access-log interceptor (design doc §6.3).
+ * Logs: method, upstream path (query redacted), dashboardId, upstreamStatus, duration,
+ * effectiveKeySource/Hash8, UA, referer. Never log the plaintext key.
  */
 @Injectable()
 export class AccessLogInterceptor implements NestInterceptor {
@@ -54,7 +54,7 @@ export class AccessLogInterceptor implements NestInterceptor {
     const upstreamStatus =
       (meta.__embedUpstreamStatus as number | undefined) ??
       (err as { status?: number })?.status;
-    // 上游 path：代理请求剥离 /api/signoz 前缀，其余（healthz/metrics）原样
+    // Upstream path: strip the /api/signoz prefix for proxied requests, keep the rest (healthz/metrics) as-is
     const upstreamPath = path.startsWith('/api/signoz')
       ? path.slice('/api/signoz'.length) || '/'
       : path;
@@ -64,8 +64,8 @@ export class AccessLogInterceptor implements NestInterceptor {
     const keyHash =
       (meta.__embedKeyHash as string | undefined) ??
       (source === 'none' ? 'none' : 'unknown');
-    // hash 只能从 source 推断存在性，不反查明文；此处记 source 即可，
-    // hash 由代理层在 debug 时另行计算，默认不输出以避免误用。
+    // A hash can only prove existence from the source, never recover the plaintext; logging the source here is enough,
+    // the proxy layer computes the hash separately when debugging and omits it by default to avoid misuse.
     const requestId =
       (meta.__embedRequestId as string | undefined) ??
       (req.headers['x-request-id'] as string | undefined);
@@ -86,12 +86,12 @@ export class AccessLogInterceptor implements NestInterceptor {
         upstreamStatus,
         durationMs,
         effectiveKeySource: source,
-        // sha256 前8位指纹（非明文），供排障比对；无 key 时为 none
+        // sha256 first-8 fingerprint (not plaintext) for troubleshooting comparison; 'none' when there is no key
         effectiveKeyHash: keyHash,
         userAgent: req.headers['user-agent'],
         referer: req.headers['referer'],
         _hashNote:
-          '如需排障，用运维手中的明文 key 本地算 sha256 前8位比对，日志不存 hash',
+          'To troubleshoot, compute the sha256 first-8 locally from the operator-held plaintext key; logs store no hash',
       }),
     );
     void hashKeyPrefix8;

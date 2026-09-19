@@ -1,6 +1,6 @@
 /**
- * 主题注册表（设计文档 §7.2）：name → ThemeModule；未知 name 回退 legacy。
- * 新增主题只加 `themes/<name>/` + 此处一行，不改 `core/`。
+ * Theme registry (design doc §7.2): name → ThemeModule; unknown names fall back to shadcn.
+ * To add a theme, only add `themes/<name>/` + one line here; never touch `core/`.
  */
 import { legacyTheme } from './legacy';
 import { shadcnTheme } from './shadcn';
@@ -12,7 +12,7 @@ const REGISTRY: Record<string, ThemeModule> = {
 };
 
 export function resolveTheme(name: string): ThemeModule {
-  return REGISTRY[name] ?? REGISTRY.legacy;
+  return REGISTRY[name] ?? REGISTRY.shadcn;
 }
 
 export function registeredThemes(): string[] {

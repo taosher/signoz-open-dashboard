@@ -1,4 +1,4 @@
-/** shadcn 默认主题装配（tailwind + Recharts 系自研 UI）。 */
+/** Shadcn default theme assembly (tailwind + Recharts-based custom UI). */
 import type { ThemeModule } from '../types';
 import { ShadcnErrorState } from './ShadcnErrorState';
 import { ShadcnTokensProvider } from './ShadcnTokens';

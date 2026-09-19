@@ -5,7 +5,7 @@ import { AddressInfo } from 'net';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
 
-/** M1 代理矩阵 e2e：mock Upstream，断言 header 注入 + allowlist（设计文档 §6.2）。 */
+/** M1 proxy matrix e2e: mock upstream, assert header injection + allowlist (design doc §6.2). */
 describe('signoz proxy (e2e)', () => {
   let mock: http.Server;
   let mockBase = '';
@@ -49,7 +49,7 @@ describe('signoz proxy (e2e)', () => {
 
     const mod = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = mod.createNestApplication();
-    // 与 main.ts 一致的最小安全配置
+    // Minimal security setup matching main.ts
     const { EmbedExceptionFilter } = await import(
       '../src/observability/embed-exception.filter'
     );
@@ -62,13 +62,13 @@ describe('signoz proxy (e2e)', () => {
     await new Promise<void>((r) => mock?.close(() => r()));
   });
 
-  it('GET /healthz 探测 upstream version', async () => {
+  it('GET /healthz probes upstream version', async () => {
     const res = await request(app.getHttpServer()).get('/healthz').expect(200);
     expect(res.body.status).toBe('ok');
     expect(res.body.signozReachable).toBe(true);
   });
 
-  it('dashboard GET 透传并注入 SIGNOZ-API-KEY（header 优先）', async () => {
+  it('dashboard GET forwards and injects SIGNOZ-API-KEY (header wins)', async () => {
     seenUpstreamKey = '';
     await request(app.getHttpServer())
       .get('/api/signoz/api/v1/dashboards/019ca330-42b0-7a60-b882-1e607e047942')
@@ -77,7 +77,7 @@ describe('signoz proxy (e2e)', () => {
     expect(seenUpstreamKey).toBe('header-key-123');
   });
 
-  it('无 header 时回退 env 默认 key', async () => {
+  it('falls back to env default key without header', async () => {
     seenUpstreamKey = '';
     await request(app.getHttpServer())
       .get('/api/signoz/api/v1/dashboards/019ca330-42b0-7a60-b882-1e607e047942')
@@ -85,7 +85,7 @@ describe('signoz proxy (e2e)', () => {
     expect(seenUpstreamKey).toBe('env-default-key');
   });
 
-  it('dashboard 写接口 403 READONLY', async () => {
+  it('dashboard write endpoints return 403 READONLY', async () => {
     const res = await request(app.getHttpServer())
       .put('/api/signoz/api/v1/dashboards/abc')
       .send({})
@@ -93,7 +93,7 @@ describe('signoz proxy (e2e)', () => {
     expect(res.body.code).toBe('EMBED_READONLY');
   });
 
-  it('非白名单接口 403 BLOCKED', async () => {
+  it('non-allowlisted endpoints return 403 BLOCKED', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/signoz/api/v1/rules')
       .set('x-embed-api-key', 'k')
@@ -101,7 +101,7 @@ describe('signoz proxy (e2e)', () => {
     expect(res.body.code).toBe('EMBED_BLOCKED');
   });
 
-  it('query_range POST 透传', async () => {
+  it('query_range POST forwards through', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/signoz/api/v5/query_range')
       .set('x-embed-api-key', 'k')
@@ -111,7 +111,7 @@ describe('signoz proxy (e2e)', () => {
     expect(seenUpstreamKey).toBe('k');
   });
 
-  it('GET /metrics 暴露指标', async () => {
+  it('GET /metrics exposes metrics', async () => {
     await request(app.getHttpServer()).get('/metrics').expect(200);
   });
 });

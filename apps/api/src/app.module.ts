@@ -13,16 +13,16 @@ import { EmbedController } from './embed.controller';
 import { SignozProxyController } from './proxy/signoz-proxy.controller';
 import { SignozProxyService } from './proxy/signoz-proxy.service';
 
-/** web/dist 产物路径：prod 为 <root>/web-dist，dev 为 ../web/dist（不存在则忽略）。 */
+/** web/dist output path: prod is <root>/web-dist, dev is ../web/dist (ignored if missing). */
 function webDistPath(): string {
   // dist/main.js → dist/../web-dist
   return join(__dirname, '..', 'web-dist');
 }
 
 /**
- * 环境文件：dev 模式（NODE_ENV=development）加载仓库根 `.env.development`，
- * 其余加载根 `.env`；文件缺失则忽略，显式环境变量优先（dotenv 不覆盖已有值）。
- * src/config 与 dist/config 到仓库根都是上三级，dev 与生产构建通用。
+ * Env file: dev mode (NODE_ENV=development) loads repo-root `.env.development`,
+ * otherwise loads root `.env`; missing files are ignored, explicit env vars win (dotenv never overrides existing values).
+ * src/config and dist/config are both three levels below the repo root, shared by dev and production builds.
  */
 function envFilePath(): string {
   const file = process.env.NODE_ENV === 'development' ? '.env.development' : '.env';
@@ -38,7 +38,7 @@ function envFilePath(): string {
       validationSchema,
       validationOptions: { abortEarly: true, allowUnknown: true },
     }),
-    // 公开嵌入：120 req/min/IP；healthz/metrics 跳过限流
+    // Public embedding: 120 req/min/IP; healthz/metrics skip rate limiting
     ThrottlerModule.forRoot([
       { name: 'embed', ttl: 60_000, limit: 120 },
     ]),

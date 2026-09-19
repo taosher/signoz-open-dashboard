@@ -1,12 +1,12 @@
-// 会话结束自动提交插件。
+// Auto-commit plugin on session end.
 //
-// 每次对话结束（session.idle）时，若工作区有已跟踪文件的变更：
-// 1. 创建一个独立的 opencode 会话，把暂存区 diff 发给它，
-//    用结构化输出生成英文语义化提交信息（conventional commits）；
-// 2. 用生成的提交信息提交（只提交不推送），随后删除独立会话。
+// When a conversation ends (session.idle) and the workspace has tracked-file changes:
+// 1. Create an isolated opencode session, send it the staged diff,
+//    and generate an English semantic commit message via structured output (conventional commits);
+// 2. Commit with the generated message (commit only, no push), then delete the isolated session.
 //
-// 防递归三重保障：模块级 busy 标志、内部会话 ID 名单、
-// 提交后工作区干净（再次触发时因无变更直接返回）。
+// Triple recursion guard: module-level busy flag, internal session ID list,
+// and a clean tree after commit (re-trigger returns early with no changes).
 const INTERNAL_TITLE = "[auto-commit hook] commit message generator";
 const DIFF_BUDGET = 12000;
 const PROMPT_TIMEOUT_MS = 120000;
@@ -96,7 +96,7 @@ function extractMessage(result) {
       body: String(structured.body ?? "").trim(),
     };
   }
-  // 兜底：从返回文本里抠出含 subject 的 JSON 对象。
+  // Fallback: extract the JSON object containing subject from the returned text.
   const texts = [];
   collectText(data, texts);
   const joined = texts.join("\n");
@@ -111,10 +111,10 @@ function extractMessage(result) {
         };
       }
     } catch {
-      // 解析失败则走散文兜底。
+      // On parse failure, fall back to prose parsing.
     }
   }
-  // 最后兜底：散文回复的首行当 subject，余下当 body，总好过无语义 fallback。
+  // Last fallback: use the first prose line as subject and the rest as body, better than a semantics-free fallback.
   return fromProseText(joined);
 }
 
@@ -150,7 +150,7 @@ async function generateCommitMessage(client, diff, files) {
       "Diff (may be truncated):",
       diff,
     ].join("\n");
-    // 注意：结构化输出走 body.outputFormat（OpenAPI 权威字段），不是 body.format。
+    // Note: structured output uses body.outputFormat (the authoritative OpenAPI field), not body.format.
     const result = await client.session.prompt({
       path: { id: helperId },
       body: {
@@ -166,7 +166,7 @@ async function generateCommitMessage(client, diff, files) {
     try {
       await client.session.delete({ path: { id: helperId } });
     } catch {
-      // 独立会话删不掉不影响主流程；ID 名单保证它不会触发提交。
+      // Failing to delete the isolated session does not affect the main flow; the ID list keeps it from triggering a commit.
     }
   }
 }
@@ -178,29 +178,29 @@ export const AutoCommitPlugin = async ({ $, directory, client }) => {
         body: { service: "auto-commit", level, message },
       });
     } catch {
-      // 日志失败不影响提交。
+      // Logging failures do not affect the commit.
     }
   };
   await log("info", `auto-commit hook loaded (directory=${directory})`);
   return {
     event: async ({ event }) => {
-      // 只响应对话结束事件，其余事件直接返回。
+      // Only respond to conversation-end events, return early for everything else.
       if (event.type !== "session.idle") return;
       await log("info", "session.idle received");
-      // 内部会话自己的 idle 直接返回，不为它提交。
+      // Return early for internal sessions' own idle events, never commit for them.
       const sid = sessionIdOf(event);
       if (sid && internalSessions.has(sid)) {
         internalSessions.delete(sid);
         return;
       }
-      // 重入保护：上一轮提交流程未结束时直接返回。
+      // Reentrancy guard: return early while the previous commit flow is still running.
       if (busy) {
         await log("warn", "skip: previous commit flow still running");
         return;
       }
       busy = true;
       try {
-        // 非 git 仓库直接返回。
+        // Return early when not inside a git repo.
         const inside = (
           await $`git -C ${directory} rev-parse --is-inside-work-tree`
             .quiet()
@@ -211,9 +211,9 @@ export const AutoCommitPlugin = async ({ $, directory, client }) => {
           await log("warn", "skip: not inside a git work tree");
           return;
         }
-        // 收纳全部变更（git add -A，含未跟踪文件；.gitignore 仍生效）。
-        // 注意：.gitignore 是唯一的防线——密钥、本地产物必须确认被忽略，
-        // 否则会被自动提交。详见仓库根 .gitignore。
+        // Stage all changes (git add -A, including untracked files; .gitignore still applies).
+        // Note: .gitignore is the only line of defense — secrets and local artifacts must be confirmed ignored,
+        // otherwise they will be auto-committed. See the repo-root .gitignore.
         await $`git -C ${directory} add -A`.quiet().nothrow();
         const cached = (
           await $`git -C ${directory} diff --cached --name-only`
@@ -225,7 +225,7 @@ export const AutoCommitPlugin = async ({ $, directory, client }) => {
           .split("\n")
           .map((line) => line.trim())
           .filter(Boolean);
-        // 无暂存变更则静默返回：不创建独立会话，不产生空提交。
+        // Return silently with no staged changes: create no isolated session, produce no empty commit.
         if (files.length === 0) {
           await log("info", "skip: no staged changes");
           return;

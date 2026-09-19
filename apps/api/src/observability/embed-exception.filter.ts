@@ -10,8 +10,8 @@ import type { Request, Response } from 'express';
 import { ensureRequestId } from '../proxy/proxy.util';
 
 /**
- * 全局异常归一：输出 { code, message, requestId, path }。
- * 已是 HttpException 且 body 含 code 的直接透传并补 requestId。
+ * Global exception normalization: output { code, message, requestId, path }.
+ * HttpExceptions whose body already carries a code pass through directly with requestId added.
  */
 @Catch()
 export class EmbedExceptionFilter implements ExceptionFilter {
@@ -50,7 +50,7 @@ export class EmbedExceptionFilter implements ExceptionFilter {
     );
     res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
       code: 'EMBED_UPSTREAM_UNAVAILABLE',
-      message: '服务异常，请重试',
+      message: 'Service error, please retry',
       requestId,
       path: req.path,
     });

@@ -1,6 +1,6 @@
 /**
- * shadcn 风格基础原语（手写等价类，不拖 registry 全量；行为对标 button/card/
- * native-select/table/skeleton）。深色经 `dark:` 变体（`.schn-dark` 生效）。
+ * Shadcn-style base primitives (hand-written equivalents, no full registry pull; behavior mirrors button/card/
+ * native-select/table/skeleton). Dark mode via `dark:` variants (activated by `.schn-dark`).
  */
 import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
@@ -79,7 +79,7 @@ export function SchnEmpty({ text }: { text: string }): JSX.Element {
   );
 }
 
-/** shadcn ScrollArea：细滚动条（表格主体等自有滚动容器用）。 */
+/** Shadcn ScrollArea: thin scrollbars (for self-scrolling containers like table bodies). */
 export function SchnScrollArea({ children, className }: { children: ReactNode; className?: string }): JSX.Element {
   return (
     <ScrollAreaPrimitive.Root type="auto" className={cn('h-full w-full overflow-hidden', className)}>

@@ -1,13 +1,13 @@
 /**
- * 内存鉴权（设计文档 §7.4-1）。Key 只放内存，不写 localStorage/cookie。
+ * In-memory auth (design doc §7.4-1). Key lives only in memory, never in localStorage/cookie.
  */
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 
 export interface EmbedAuth {
   dashboardId: string;
-  /** 内存 Key：`URL.apiKey`，无则 undefined（服务端回退 env 默认值）。 */
+  /** In-memory Key: `URL.apiKey`, undefined when absent (server falls back to the env default). */
   apiKey: string | undefined;
-  /** 是否携带了 Key（用于 401 空态文案区分）。 */
+  /** Whether a Key is present (used to distinguish 401 empty-state copy). */
   hasKey: boolean;
   setApiKey: (key: string | undefined) => void;
 }
@@ -40,6 +40,6 @@ export function EmbedAuthProvider(props: {
 
 export function useEmbedAuth(): EmbedAuth {
   const v = useContext(Ctx);
-  if (!v) throw new Error('useEmbedAuth 必须在 EmbedAuthProvider 内使用');
+  if (!v) throw new Error('useEmbedAuth must be used within EmbedAuthProvider');
   return v;
 }

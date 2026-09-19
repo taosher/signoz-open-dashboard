@@ -1,7 +1,7 @@
 /**
- * legacy WidgetCard：按 panelTypes 分发渲染
- *（graph/table/list/pie/bar/histogram/value；row 由 App 展平不进卡片）。
- * 图表用 echarts 系自研实现，视觉贴近即可（设计文档 §7.3）。
+ * Legacy WidgetCard: dispatch rendering by panelTypes
+ * (graph/table/list/pie/bar/histogram/value; rows are flattened by App and never enter cards).
+ * Charts use an echarts-based custom implementation; visual closeness is enough (design doc §7.3).
  */
 import { Card, Empty, Spin, Statistic, Table } from 'antd';
 import * as echarts from 'echarts';
@@ -61,7 +61,7 @@ function formatTimeTick(ms: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
-/** axis tooltip：时间标题 + 两列对齐表格（名左值右，数字等宽）。 */
+/** Axis tooltip: time title + two-column aligned table (names left, values right, tabular numbers). */
 function axisTooltipFormatter(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   params: any,
@@ -170,8 +170,8 @@ function PieChart({ tables, series, unit, locale }: { tables: UiTable[]; series:
   const dark = useColorMode() === 'dark';
   const t = legacyStrings(locale ?? 'zh');
   const fg = chartForeground(dark ? 'dark' : 'light');
-  // scalar 口径有两种形态：列式（columns+data）按列名分片；
-  // 序列式（aggregations+series，如本看板 pie）取各 query 最新值，名取 query 图例
+  // Scalar has two shapes: columnar (columns+data) sliced by column name;
+  // series-like (aggregations+series, e.g. pie on this dashboard) takes the latest value per query, names from query legends
   const columnItems = tables.flatMap((t: UiTable) =>
     t.columns
       .filter((c: UiTable['columns'][number]) => c.isValue)
@@ -227,12 +227,12 @@ function PieChart({ tables, series, unit, locale }: { tables: UiTable[]; series:
       : null;
   useEcharts(ref, option);
   if (items.length === 0) return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />;
-  // 中心总值用 HTML 叠加（flex 居中），不受饼图半径/图例布局影响
+  // Center total overlaid with HTML (flex-centered), unaffected by pie radius/legend layout
   return (
     <div style={{ position: 'relative', flex: 1, minHeight: 0, width: '100%' }}>
       <div ref={ref} style={{ position: 'absolute', inset: 0 }} />
       <div
-        // 与饼心（center 44%）对齐：百分比 height 相对父高度解析，避开百分比 padding 相对宽度解析的坑
+        // Align with the pie center (center 44%): percentage height resolves against parent height, avoiding the pitfall where percentage padding resolves against width
         style={{
           position: 'absolute',
           left: 0,
@@ -284,7 +284,7 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
     const raw = firstRow && firstCol ? Number(firstRow[firstCol.id]) : NaN;
     const singleSeries = data?.series[0];
     const single = singleSeries && singleSeries.points.length > 0 ? singleSeries.points[singleSeries.points.length - 1].v : NaN;
-    // 列式 scalar 取首行首值列；序列式 scalar 取首 series 最新值
+    // Columnar scalar takes the first row's first value column; series-like scalar takes the first series' latest value
     const v = Number.isFinite(raw) ? raw : single;
     body = (
       <div style={{ flex: 1, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

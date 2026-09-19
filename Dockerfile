@@ -1,4 +1,4 @@
-# 单镜像多阶段构建（设计文档 §9）：web 占位 → api 构建 → node runtime。
+# Single-image multi-stage build (design doc §9): web placeholder → api build → node runtime.
 FROM node:20-slim AS webbuild
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml ./

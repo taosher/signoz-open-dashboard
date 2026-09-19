@@ -1,7 +1,7 @@
 /**
- * shadcn 主题样式基座。
- * tailwind 只做 theme + utilities 两层（不要 preflight，避免污染 legacy 主题），
- * 深色用 class 变体（`.schn-dark` 包裹，跟随 `?mode=`，不跟系统）。
+ * shadcn theme style base.
+ * tailwind provides only the theme + utilities layers (no preflight, so the legacy theme is untouched);
+ * dark mode uses a class variant (wrapped in `.schn-dark`, follows `?mode=`, never the OS setting).
  */
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
@@ -18,14 +18,14 @@
   color-scheme: dark;
 }
 
-/* 不引 preflight（保 legacy），故此处补原生控件基准。
- * 注意：不能写 `font: inherit` 简写——无层样式会盖掉 tailwind 的 text-xs，
- * 只补 preflight 中与工具类无冲突的 font-family。 */
+/* No preflight (keeps legacy intact), so native control baselines are patched here.
+ * NOTE: never use the `font: inherit` shorthand — unlayered styles override tailwind text-xs;
+ * only patch the conflict-free font-family from preflight. */
 .schn button {
   font-family: inherit;
 }
 
-/* radix 内部下拉/浮层列表的细滚动条（shadcn 观感；table 主体用 ScrollArea 原语） */
+/* Slim scrollbars for radix dropdown/popover lists (shadcn look; table bodies use the ScrollArea primitive) */
 .schn .schn-scroll {
   scrollbar-width: thin;
   scrollbar-color: rgb(212 212 216) transparent;
@@ -44,8 +44,8 @@
   background: rgb(39 39 42);
 }
 
-/* Recharts 可访问性焦点框：点击图表不出现蓝色边框。
- * 实测焦点落在 svg 内 <g> 上（wrapper div 规则盖不住），故全域覆盖 svg 内焦点。 */
+/* Recharts a11y focus ring: no blue outline when clicking a chart.
+ * Measured focus lands on a <g> inside the svg (wrapper-div rules cannot cover it), so cover all svg focus. */
 .schn .recharts-wrapper:focus,
 .schn .recharts-wrapper:focus-visible,
 .schn .recharts-surface:focus,
@@ -54,7 +54,7 @@
   outline: none;
 }
 
-/* day-picker v10 把 selected 画在格子上，按钮文字需反白（类在不同元素，无层叠可争） */
+/* day-picker v10 paints selected on the cell, so the button text needs inverted colors (classes live on different elements) */
 .schn [data-selected='true'] > button {
   color: #fafafa;
   background-color: transparent;

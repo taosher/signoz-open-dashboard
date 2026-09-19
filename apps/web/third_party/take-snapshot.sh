@@ -1,7 +1,7 @@
 #!/bin/zsh
-# 生成 SigNoz v0.97.0 只读参考快照（设计文档 §7.1）。
-# 来源：~/develop/open-source/signoz @ v0.97.0（只读，禁止修改）。
-# 产物：apps/web/third_party/signoz-0.97.0/（不参与构建，仅供语义对照）。
+# Generate the SigNoz v0.97.0 read-only reference snapshot (design doc §7.1).
+# Source: ~/develop/open-source/signoz @ v0.97.0 (read-only, do not modify).
+# Output: apps/web/third_party/signoz-0.97.0/ (not part of the build, for semantic comparison only).
 set -euo pipefail
 
 REF="${SIGNOZ_REF_REPO:-$HOME/develop/open-source/signoz}"
@@ -9,18 +9,18 @@ TAG="${SIGNOZ_REF_TAG:-v0.97.0}"
 OUT="$(cd "$(dirname "$0")/.." && pwd)/third_party/signoz-0.97.0"
 
 if [[ ! -d "$REF/.git" ]]; then
-  echo "参考仓库不存在：$REF" >&2
+  echo "Reference repo not found: $REF" >&2
   exit 1
 fi
 
-# 校验 tag
+# Verify tag
 SHA=$(git -C "$REF" rev-parse "$TAG") || exit 1
-echo "快照 $TAG ($SHA)"
+echo "Snapshot $TAG ($SHA)"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
-# 查询语义核心 + 渲染对照（纯参考，不编译）
+# Query-semantics core + rendering reference (reference only, never compiled)
 git -C "$REF" archive "$TAG" \
   frontend/src/api/v5/queryRange \
   frontend/src/constants/queryBuilder.ts \
@@ -34,12 +34,12 @@ git -C "$REF" archive "$TAG" \
   | tar -x -C "$OUT"
 
 cat > "$OUT/SNAPSHOT.md" <<EOF
-# SigNoz 参考快照（只读）
+# SigNoz reference snapshot (read-only)
 
-- tag：$TAG
-- sha：$SHA
-- 取自：\`$REF\`（\`git archive\` 导出，未做任何修改）
-- 用途：查询语义对照（见 \`../PATCHES.md\` 映射表），不参与构建。
+- tag: $TAG
+- sha: $SHA
+- taken from: \`$REF\` (exported via \`git archive\`, no modifications)
+- purpose: query-semantics comparison (see \`../PATCHES.md\` mapping table), not part of the build.
 EOF
 
-echo "快照已生成：$OUT"
+echo "Snapshot generated: $OUT"

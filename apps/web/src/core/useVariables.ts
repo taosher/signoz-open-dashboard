@@ -1,6 +1,6 @@
 /**
- * 看板变量（M7：TanStack Query）。候选值变化慢：`staleTime` 5 分钟，
- * 解析一次（不随轮询 tick），用户改选走上层覆盖。
+ * Dashboard variables (M7: TanStack Query). Candidates change slowly: `staleTime` 5 minutes,
+ * resolved once (not on polling ticks); user selections override from above.
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEmbedAuth } from './auth';

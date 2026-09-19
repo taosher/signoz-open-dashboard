@@ -1,22 +1,22 @@
 /**
- * Embed URL 参数解析/序列化（设计文档 §4.1 / §8）。
- * 纯函数、无 DOM 依赖，前后端可共用。
- * 注意：serialize 只写原生参数（relativeTime 或 startTime+endTime），
- * `from/to` 仅入口单向兼容翻译，不回写；env 默认 key 永不回写（防泄漏）。
+ * Embed URL param parsing/serialization (design doc §4.1 / §8).
+ * Pure functions with no DOM dependency, shared by frontend and backend.
+ * Note: serialize only writes native params (relativeTime or startTime+endTime),
+ * `from/to` are translated one-way on entry only, never written back; the env default key is never written back (leak protection).
  */
 
 export type EmbedLocale = 'zh' | 'en';
 
-/** 设计文档 §7.2：主题注册表名。未知值回退 `legacy`。 */
+/** Theme registry names (design doc §7.2). Unknown values fall back to the default theme. */
 export const KNOWN_EMBED_THEMES = ['legacy', 'shadcn'] as const;
 export type EmbedThemeName = (typeof KNOWN_EMBED_THEMES)[number];
-export const DEFAULT_EMBED_THEME: EmbedThemeName = 'legacy';
+export const DEFAULT_EMBED_THEME: EmbedThemeName = 'shadcn';
 
-/** 深浅色（设计文档 §4.1 `mode`，与主题正交）。 */
+/** Color scheme (design doc §4.1 `mode`, orthogonal to the theme). */
 export type EmbedMode = 'light' | 'dark';
 export const DEFAULT_EMBED_MODE: EmbedMode = 'light';
 
-/** 工具条控制项三态（设计文档 §4.1）：show 显示可用，hidden 不渲染，disabled 置灰。 */
+/** Toolbar control tri-state (design doc §4.1): show renders enabled, hidden skips rendering, disabled renders greyed out. */
 export type ControlVisibility = 'show' | 'hidden' | 'disabled';
 
 export function normalizeControlVisibility(raw: unknown): ControlVisibility {
@@ -30,9 +30,9 @@ export function normalizeControlVisibility(raw: unknown): ControlVisibility {
 export interface ParsedEmbedParams {
   dashboardId: string;
   apiKey?: string;
-  /** 原生相对时间，如 `30m`；绝对时间模式下为 null。 */
+  /** Native relative time, e.g. `30m`; null in absolute-time mode. */
   relativeTime: string | null;
-  /** 绝对时间（epoch 秒）。相对模式下为 null。 */
+  /** Absolute time (epoch seconds). Null in relative mode. */
   startTime: number | null;
   endTime: number | null;
   theme: string;
@@ -58,7 +58,7 @@ export function isValidDashboardId(id: string): boolean {
   return UUID_RE.test(id);
 }
 
-/** 未知主题回退 `legacy`（设计文档 §4.1 / §7.2，验收用例 #11）。 */
+/** Unknown themes fall back to the default theme (design doc §4.1 / §7.2, acceptance case #11). */
 export function normalizeThemeName(raw: unknown): string {
   const v = String(raw ?? '')
     .trim()
@@ -67,7 +67,7 @@ export function normalizeThemeName(raw: unknown): string {
   return DEFAULT_EMBED_THEME;
 }
 
-/** 未知 mode 回退 `light`（设计文档 §4.1）。 */
+/** Unknown modes fall back to `light` (design doc §4.1). */
 export function normalizeMode(raw: unknown): EmbedMode {
   return String(raw ?? '')
     .trim()
@@ -93,9 +93,9 @@ function parseEpoch(v: string | null): number | null {
 }
 
 /**
- * 旧式 `from/to` 单向兼容翻译（设计文档 §4.1）。
- * `now-30m~now` → `{ relativeTime: '30m' }`；纯 `now~now` 视为默认 `30m`；
- * 否则按 epoch 秒解析为绝对时间；解析失败返回 null（调用方用默认）。
+ * Legacy `from/to` one-way compatibility translation (design doc §4.1).
+ * `now-30m~now` → `{ relativeTime: '30m' }`; bare `now~now` defaults to `30m`;
+ * otherwise parse as epoch seconds for absolute time; return null on failure (caller applies the default).
  */
 export function translateLegacyFromTo(
   from: string | null,
@@ -119,7 +119,7 @@ export function translateLegacyFromTo(
   return null;
 }
 
-/** 脱敏：把 query 对象中的 key 字段替换为 ***（大小写不敏感）。 */
+/** Redaction: replace key fields in the query object with *** (case-insensitive). */
 export function sanitizeQuery(
   query: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -148,7 +148,7 @@ export function parseEmbedParams(
     }
   }
 
-  // 时间：原生参数优先，旧式 from/to 兼容翻译，默认 30m。
+  // Time: native params win, legacy from/to are compat-translated, default 30m.
   let relativeTime: string | null = null;
   let startTime: number | null = null;
   let endTime: number | null = null;
@@ -208,8 +208,8 @@ export function parseEmbedParams(
 }
 
 /**
- * refresh 钳制（设计文档 §4.1）：`off`/`inherit` 原样返回；
- * 时长 `<10s` 钳制到 `10s`，防刷爆。解析失败返回 `inherit`。
+ * refresh clamping (design doc §4.1): `off`/`inherit` pass through untouched;
+ * durations `<10s` clamp to `10s` to prevent refresh storms. Return `inherit` on parse failure.
  */
 export function normalizeRefresh(
   raw: string | null | undefined,
@@ -227,9 +227,9 @@ export function normalizeRefresh(
 }
 
 /**
- * 序列化回 URL（供前端 replaceState）。
- * 只写原生时间参数；`@param includeApiKey` 仅当入参自带 key 时保留；
- * env 默认 key 永不回写。
+ * Serialize back to URL (for frontend replaceState).
+ * Only writes native time params; `@param includeApiKey` keeps the key only when the input already carries one;
+ * the env default key is never written back.
  */
 export function serializeEmbedParams(
   p: ParsedEmbedParams,

@@ -1,5 +1,5 @@
 /**
- * 错误映射（设计文档 §6.4 / §7.4-8）。core 按 code 映射，主题只负责样式表达。
+ * Error mapping (design doc §6.4 / §7.4-8). Core maps by code; themes only handle styling.
  */
 import type { EmbedErrorCode, EmbedLocale } from '@signoz-open-dashboard/shared';
 import type { EmbedApiError } from './api';
@@ -23,7 +23,7 @@ export function toErrorProps(e: unknown, onRetry?: () => void, locale: EmbedLoca
   const code: EmbedErrorCode =
     typeof err.code === 'string' ? (err.code as EmbedErrorCode) : 'EMBED_UPSTREAM_UNAVAILABLE';
   const message =
-    typeof err.message === 'string' && err.message !== '' ? err.message : '加载失败';
+    typeof err.message === 'string' && err.message !== '' ? err.message : 'Load failed';
   return { code, message, requestId: err.requestId, retry: RETRYABLE.has(code), onRetry, locale };
 }
 
@@ -49,5 +49,5 @@ const TITLE_EN: Record<EmbedErrorCode, string> = {
 
 export function errorTitle(code: EmbedErrorCode, locale: EmbedLocale = 'zh'): string {
   const table = locale === 'en' ? TITLE_EN : TITLE_ZH;
-  return table[code] ?? '加载失败';
+  return table[code] ?? 'Load failed';
 }

@@ -1,7 +1,7 @@
 /**
- * 单 widget v5 取数（M7：TanStack Query）。
- * key 变化（时间推进/变量变更/刷新 tick）触发取数，`placeholderData` 保旧图，
- * 后台取数中 `refreshing` 为 true（主题可弱提示，不闪 Spin）。
+ * Single-widget v5 fetching (M7: TanStack Query).
+ * Key changes (time advance/variable change/refresh tick) trigger fetching, `placeholderData` keeps the old chart,
+ * and `refreshing` is true during background refetch (theme may show a subtle hint instead of flashing a Spin).
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { apiFetch } from '../core/api';
@@ -12,11 +12,11 @@ import { buildQueryRangePayload } from './queryPayload';
 import { parseV5Response, type ParsedV5 } from './v5Response';
 
 export interface WidgetQueryState {
-  /** 首屏且无数据时为 true（之后由 placeholder 保旧图，不再闪）。 */
+  /** True only on first paint with no data (placeholder keeps the old chart afterwards, no more flashing). */
   loading: boolean;
   data: ParsedV5 | null;
   error: unknown;
-  /** 有旧数据时的后台取数中。 */
+  /** Background refetch with stale data present. */
   refreshing: boolean;
   refetch: () => void;
 }

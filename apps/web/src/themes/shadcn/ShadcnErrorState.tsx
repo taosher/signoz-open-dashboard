@@ -1,4 +1,4 @@
-/** shadcn 空态 + Retry + requestId。 */
+/** Shadcn empty state + Retry + requestId. */
 import type { ErrorProps } from '../../core/errors';
 import { SchnButton } from './ui';
 

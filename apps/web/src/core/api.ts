@@ -1,6 +1,6 @@
 /**
- * 同源取数（设计文档 §7.4-2）。一律走 `/api/signoz/*`，
- * 拦截器附 `x-embed-api-key`（内存值，无则不带）。
+ * Same-origin fetching (design doc §7.4-2). Always via `/api/signoz/*`,
+ * with an interceptor attaching `x-embed-api-key` (in-memory value, omitted when absent).
  */
 import type { EmbedErrorBody, EmbedErrorCode } from '@signoz-open-dashboard/shared';
 import { useEmbedAuth } from './auth';
@@ -43,7 +43,7 @@ export async function apiFetch<T>(
     });
   } catch (e) {
     if ((e as Error)?.name === 'AbortError') throw e;
-    const err = new Error(`SigNoz 后端不可达/超时：${path}`) as EmbedApiError;
+    const err = new Error(`SigNoz backend unreachable/timed out: ${path}`) as EmbedApiError;
     err.name = 'EmbedApiError';
     err.code = 'EMBED_UPSTREAM_UNAVAILABLE';
     err.httpStatus = 502;
@@ -52,7 +52,7 @@ export async function apiFetch<T>(
   const text = await res.text();
   const body: unknown = text === '' ? {} : safeJson(text);
   if (!res.ok) {
-    throw toError(res.status, body, `请求失败：${path}（${res.status}）`);
+    throw toError(res.status, body, `Request failed: ${path} (${res.status})`);
   }
   return body as T;
 }
@@ -65,7 +65,7 @@ function safeJson(text: string): unknown {
   }
 }
 
-/** 在 hook 内自动注入内存 Key 的取数封装。 */
+/** Fetch wrapper that auto-injects the in-memory Key inside hooks. */
 export function useApiKey(): string | undefined {
   return useEmbedAuth().apiKey;
 }

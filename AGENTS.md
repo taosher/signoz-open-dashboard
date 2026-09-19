@@ -1,52 +1,51 @@
 # AGENTS.md
 
-> 本文件是 agent 在此仓库的工作契约。与下文冲突时，以 `docs/product-tech-design.md` 为准。
+> This file is the working contract for agents in this repo. On any conflict below, `docs/product-tech-design.md` wins.
 
-## 1. 唯一事实源（docs-first）
+## 1. Single source of truth (docs-first)
 
-- `docs/product-tech-design.md` 是唯一事实源（Single Source of Truth）。
-- 任何设计变更（URL 参数、代理矩阵、裁剪清单、env、错误码、部署形态）必须先改该文档，再写代码。文档未更新的代码变更视为无效。
-- 文档与代码/注释冲突时，以文档为准，并在 `bug-track.md` 记一笔。
+- `docs/product-tech-design.md` is the single source of truth.
+- Any design change (URL params, proxy matrix, trim list, env, error codes, deployment shape) must update that document first, then the code. A code change without the doc update is invalid.
+- When docs conflict with code/comments, the docs win, and a row is added to `bug-track.md`.
 
-## 2. 仓库现状与边界
+## 2. Repo status and boundaries
 
-- 本仓库目标结构（见设计文档 §5.1/§7）：`apps/api`（NestJS）+ `apps/web`（主题插件架构：`core/` + `signoz/` + `themes/legacy`）+ `packages/shared` + 单 Docker 镜像。`apps/web/src/vendor/`（100% 复刻路线产物）已删除，禁止重建；SigNoz 参考实现只读，不做逐字搬运。
-- SigNoz 参考实现是只读的：`~/develop/open-source/signoz @ v0.97.0`。禁止修改它，也禁止逐字搬运其前端到本仓库运行时；复用查询语义走 `third_party/signoz-0.97.0` 快照（可再造，不入库）对照实现。
-- 后端唯一 Upstream 由 env `SIGNOZ_BASE_URL` 固定（单后端，防 SSRF）。禁止在 URL 参数里接受后端地址。
-- 测试后端与验收 Dashboard 以设计文档冒烟表为准，`curl` 验证见设计文档附录 A。调试优先用 `GET /api/v1/dashboards/:id` + `SIGNOZ-API-KEY` 头验证连通性。
+- Target structure of this repo (see design doc §5.1/§7): `apps/api` (NestJS) + `apps/web` (theme plugin architecture: `core/` + `signoz/` + `themes/shadcn` (default) + `themes/legacy`) + `packages/shared` + single Docker image. `apps/web/src/vendor/` (artifact of the 100% replica route) has been deleted, do not recreate it; the SigNoz reference implementation is read-only, do not copy it verbatim.
+- The SigNoz reference implementation is read-only: `~/develop/open-source/signoz @ v0.97.0`. Do not modify it, and do not copy its frontend verbatim into this repo's runtime; reuse of query semantics is done against the `third_party/signoz-0.97.0` snapshot (reproducible, not committed) for comparison.
+- The single backend Upstream is fixed by the env `SIGNOZ_BASE_URL` (one backend, SSRF protection). Never accept a backend address via URL params.
+- The test backend and acceptance dashboard follow the smoke table in the design doc; see Appendix A of the design doc for `curl` verification. For debugging, prefer `GET /api/v1/dashboards/:id` with the `SIGNOZ-API-KEY` header to verify connectivity.
 
-## 3. 工作流（五条硬约束）
+## 3. Workflow (five hard constraints)
 
-1. **先文档后代码**：改设计 → 改 `docs/product-tech-design.md` → 再改代码。
-2. **提交信息**：英文、conventional commits、祈使句、首行 ≤72 字符。类型仅用 `feat/fix/docs/refactor/test/chore`。例：`feat(api): proxy query_range with api key injection`。
-3. **技术文档**：一律中文（含 `docs/`、注释中的设计说明、PR 描述）。仅 commit message 用英文。
-4. **踩坑记录**：开发/调试/测试中任何坑，立即以表格行追加到根目录 `bug-track.md`，列固定为 `日期/现象/根因/处理/状态/关联`，不另开文件。
-5. **待办唯一入口**：`TODOS.md` 是唯一待办列表。只有“代码完成 + 测试通过”后才可更新对应任务为完成；禁止口头标记完成。
+1. **Docs before code**: design change → update `docs/product-tech-design.md` → then change code.
+2. **Commit messages**: English, conventional commits, imperative mood, first line ≤72 chars. Types limited to `feat/fix/docs/refactor/test/chore`. Example: `feat(api): proxy query_range with api key injection`.
+3. **Technical docs**: always English (including `docs/`, design notes in comments, PR descriptions). Commit messages are English too.
+4. **Pitfall log**: for any pitfall found during development/debugging/testing, immediately append a table row to the root `bug-track.md` with the fixed columns `Date/Phenomenon/Root cause/Handling/Status/Related`, do not open another file.
+5. **Single TODO entry**: `TODOS.md` is the only TODO list. A task may only be marked done after "code complete + tests pass"; no verbal completion marks.
 
-## 4. 命令与验证
+## 4. Commands and verification
 
-- 包管理 `pnpm@9`（根 `package.json` 锁定），Node `>=20`。首次：`pnpm install`。
-- 构建全部：`pnpm build`（自动同步 `web/dist` → `api/web-dist`）；单包：`pnpm build:api` / `pnpm build:shared` / `pnpm build:web`。
-- 测试全部：`pnpm test`；API 单测：`pnpm test:api`；API e2e（含 mock 上游的代理矩阵）：`pnpm --filter @signoz-open-dashboard/api test:e2e`。
-- 类型检查：`pnpm typecheck`（或按包 `pnpm --filter <pkg> typecheck`）。
-- 本地启动 API：`SIGNOZ_BASE_URL=http://192.168.10.2:30303 SIGNOZ_API_KEY=<key> pnpm dev:api`（dev，watch），生产构建产物：`SIGNOZ_BASE_URL=... node apps/api/dist/main.js`。健康检查：`GET /healthz`，指标：`GET /metrics`。
-- 本地开发前端：`pnpm dev:web`（vite :5173，`/api/signoz` 代理到 `:8080`，需同时起 `dev:api`）；全量构建后自动同步 `apps/web/dist` → `apps/api/web-dist`（`scripts/sync-web-dist.js`，NestJS ServeStatic 挂载点）。
-- 注意：`apps/web` 正在 M5 重做中，`pnpm build:web` / `pnpm build` 预期失败（残留文件引用已删除的 `vendor/`），属正常现象，M5 落地后恢复；`pnpm build:api` / `pnpm test` 不受影响。
-- 真后端联调矩阵（dashboard GET / query_range 透传 / 写接口 403 / 错误码映射）见 `TODOS.md` M1 验收记录，探活用 `GET /api/signoz/api/v1/dashboards/:id` + `x-embed-api-key` 头。
-- SigNoz 参考仓库命令只用于查阅，不在此仓库执行构建（除 `git archive/show` 取快照、`curl` 探活）。
-- 文件操作用专用工具（`read/edit/write`），`bash` 仅用于 `git/curl/docker/pnpm` 等终端操作，不用 `cat/sed/awk/echo` 读写文件。
-- 用完 ego-browser 立即释放：每个 TaskSpace 用完就 `task.finish({keep: []})` 关闭，不堆积 space/page；本地 dev 服务（`:5173`/`:8080` 后台进程）验证完就杀掉；浏览器验证优先复用同一个 space（`goto` 而非开新 space），避免耗尽本机资源。
-- ego-browser 同时只允许存在 2 个 TaskSpace：每次使用前先 `listTaskSpaces()` 检查，超过 2 个就把旧的全部 `finish({keep: []})` 清掉再建新的。
+- Package manager `pnpm@9` (pinned in the root `package.json`), Node `>=20`. First time: `pnpm install`.
+- Build all: `pnpm build` (auto-syncs `web/dist` → `api/web-dist`); single package: `pnpm build:api` / `pnpm build:shared` / `pnpm build:web`.
+- Test all: `pnpm test`; API unit tests: `pnpm test:api`; API e2e (proxy matrix with mocked upstream): `pnpm --filter @signoz-open-dashboard/api test:e2e`.
+- Typecheck: `pnpm typecheck` (or per package `pnpm --filter <pkg> typecheck`).
+- Start the API locally: `SIGNOZ_BASE_URL=http://192.168.10.2:30303 SIGNOZ_API_KEY=<key> pnpm dev:api` (dev, watch); production build artifact: `SIGNOZ_BASE_URL=... node apps/api/dist/main.js`. Health check: `GET /healthz`, metrics: `GET /metrics`.
+- Local frontend dev: `pnpm dev:web` (vite on :5173, `/api/signoz` proxied to `:8080`, requires `dev:api` running alongside); after a full build `apps/web/dist` is auto-synced to `apps/api/web-dist` (`scripts/sync-web-dist.js`, the NestJS ServeStatic mount point).
+- Note: `apps/web` is being redone in M5, so `pnpm build:web` / `pnpm build` are expected to fail (leftover files still reference the deleted `vendor/`). This is normal and recovers once M5 lands; `pnpm build:api` / `pnpm test` are unaffected.
+- For the real-backend integration matrix (dashboard GET / query_range passthrough / write-interface 403 / error-code mapping) see the M1 acceptance record in `TODOS.md`; probe with `GET /api/signoz/api/v1/dashboards/:id` + the `x-embed-api-key` header.
+- Commands against the SigNoz reference repo are for lookup only, do not build it from this repo (except `git archive/show` for snapshots and `curl` liveness probes).
+- Use dedicated tools for file operations (`read/edit/write`); use `bash` only for terminal operations such as `git/curl/docker/pnpm`, never for reading/writing files with `cat/sed/awk/echo`.
+- Release ego-browser immediately after use: close every TaskSpace with `task.finish({keep: []})` once done, do not pile up spaces/pages; kill local dev services (background processes on `:5173`/`:8080`) after verification; prefer reusing the same space for browser verification (`goto` instead of opening a new space) to avoid exhausting local resources.
+- ego-browser allows at most 2 TaskSpaces at a time: call `listTaskSpaces()` before each use, and if there are more than 2, close all the old ones with `finish({keep: []})` before creating a new one.
 
-## 5. 红线（agent 最易踩错）
+## 5. Red lines (where agents most easily go wrong)
 
-- 永不记录明文 API Key：日志、bug-track、TODOS、commit、文档新增内容中只允许 `effectiveKeySource/effectiveKeyHash(前8位）`，query 序列化前先脱敏 `apiKey/apikey/access_token`（大小写不敏感）。
-- 代理默认拒绝：除设计文档 §6.2 白名单（dashboards GET、v3/v4/v5 query_range、substitute_vars、v2 variables/query、version/features）外，其余 `/api/*` 一律 403，不透传写接口（dashboard PUT/POST/DELETE、`/lock`、rules/alerts/user/org）。
-- 前端 Key 只放内存，禁止写 `localStorage/cookie/URL 回写 env 默认 key`（`serializeEmbedParams` 规则见设计文档 §8）。
-- iframe 公开嵌入：`CSP frame-ancestors *`、`CORS *` 是有意为之，不要“顺手加固”为 DENY。
-- Node 锁定 `20 LTS`；`apps/web` 为主题插件架构（见设计文档 §7）：禁止重建 `src/vendor`（逐字搬运路线已废弃）；新增主题只加 `themes/<name>/` + registry 一行，不改 `core/`；`legacy` 主题组件库见 §7.3，大版本锁定后不再升级。
+- Never log a plaintext API key: logs, bug-track, TODOS, commits, and newly added doc content may only contain `effectiveKeySource/effectiveKeyHash(first 8 chars)`; strip `apiKey/apikey/access_token` (case-insensitive) before serializing queries.
+- Proxy denies by default: except for the §6.2 allowlist in the design doc (dashboards GET, v3/v4/v5 query_range, substitute_vars, v2 variables/query, version/features), everything else under `/api/*` returns 403; never proxy write interfaces (dashboard PUT/POST/DELETE, `/lock`, rules/alerts/user/org).
+- Frontend keys live only in memory; never write to `localStorage/cookie/URL echo of the env default key` (see the `serializeEmbedParams` rule in design doc §8).
+- Public iframe embedding: `CSP frame-ancestors *` and `CORS *` are intentional, do not "harden" them to DENY on your own initiative.
+- Node is pinned to `20 LTS`; `apps/web` uses the theme plugin architecture (see design doc §7): never recreate `src/vendor` (the verbatim-copy route is abandoned); a new theme only adds `themes/<name>/` plus one registry line, never touches `core/`; the `shadcn` (default) and `legacy` theme component libraries are covered in §7.6/§7.3 and are locked after the major version, no further upgrades.
 
 ## 6. Skills
 
-- 写 NestJS 代码前先读仓库内 skill：`.agents/skills/nestjs-best-practices/SKILL.md`（DTO/validation、exception filter、health check、rate-limit 规范）。
-- 中文技术文档润色可用 `.agents/skills/humanizer-zh/SKILL.md`，但不得改变设计含义。
+- Before writing NestJS code, read the in-repo skill: `.agents/skills/nestjs-best-practices/SKILL.md` (DTO/validation, exception filter, health check, rate-limit conventions).

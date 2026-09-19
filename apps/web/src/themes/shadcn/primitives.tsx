@@ -1,5 +1,5 @@
 /**
- * shadcn Popover / ToggleGroup / Checkbox（radix，portal 自带深色类）。
+ * Shadcn Popover / ToggleGroup / Checkbox (radix, portals carry their own dark classes).
  */
 import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import * as PopoverPrimitive from '@radix-ui/react-popover';

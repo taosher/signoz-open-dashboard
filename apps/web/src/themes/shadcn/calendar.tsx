@@ -1,6 +1,6 @@
 /**
- * shadcn Calendar（react-day-picker range，对照 registry calendar 形态，
- * 按 v10 部件键写 classNames；周名/标题经 formatters 本地化，无需 date-fns）。
+ * Shadcn Calendar (react-day-picker range, mirroring the registry calendar shape,
+ * classNames keyed for v10 parts; weekday names/titles localized via formatters, no date-fns needed).
  */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DayPicker, type DateRange } from 'react-day-picker';

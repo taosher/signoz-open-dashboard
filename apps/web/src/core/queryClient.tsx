@@ -1,7 +1,7 @@
 /**
- * TanStack Query v5 接入（M7）。嵌入页取数统一走 React Query：
- * 同 key 并发去重、placeholder 保旧数据（SWR 式无闪更新）、指数退避重试。
- * iframe 无焦点语义：关闭 window-focus/reconnect 自动取数。
+ * TanStack Query v5 wiring (M7). All embed fetching goes through React Query:
+ * same-key concurrent dedup, placeholder keeps stale charts (SWR-style flicker-free updates), exponential-backoff retries.
+ * iframe has no focus semantics: disable window-focus/reconnect refetch.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
@@ -23,7 +23,7 @@ export function EmbedQueryProvider({ children }: { children: ReactNode }): JSX.E
   return <QueryClientProvider client={embedQueryClient}>{children}</QueryClientProvider>;
 }
 
-/** 稳定哈希（键排序，queryKey 用）。 */
+/** Stable hash (sorted keys, for queryKey use). */
 export function stableHash(v: unknown): string {
   return JSON.stringify(sortDeep(v));
 }

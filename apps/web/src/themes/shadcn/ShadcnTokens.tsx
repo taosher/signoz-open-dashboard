@@ -1,4 +1,4 @@
-/** shadcn 主题 token：`.schn` 包裹 + `dark` class 切换（跟随 `?mode=`）；页面底色/间距经 CSS 变量提供（留白 24px，无灰底）。 */
+/** Shadcn theme tokens: wrapped in `.schn` + `dark` class toggle (follows `?mode=`); page background/padding via CSS vars (24px breathing room, no gray backdrop). */
 import type { ReactNode } from 'react';
 import { useColorMode } from '../../core/colorMode';
 import './shadcn.css';

@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 
-// 嵌入应用：构建目标 Chrome108（设计文档 §4.4）。
-// 主题插件架构（设计文档 §7）：core/ + signoz/ + themes/，无 vendor 映射。
-// tailwind 仅 shadcn 主题使用（preflight 关闭，见 themes/shadcn/shadcn.css，不污染 legacy）。
-// shared 包 dist 为 CJS（供 NestJS 用），web 侧直接消费其 TS 源码，避免 ESM/CJS 互操作问题。
+// Embed app: build target Chrome108 (design doc §4.4).
+// Theme plugin architecture (design doc §7): core/ + signoz/ + themes/, no vendor mapping.
+// tailwind is only used by the shadcn theme (preflight disabled, see themes/shadcn/shadcn.css, does not pollute legacy).
+// The shared package dist is CJS (for NestJS); the web side consumes its TS source directly to avoid ESM/CJS interop issues.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   base: '/',
