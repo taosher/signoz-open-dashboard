@@ -35,7 +35,7 @@ import {
   type ChartConfig,
 } from './chart';
 import { shadcnStrings } from './locale';
-import { SchnCard, SchnEmpty, SchnSkeleton } from './ui';
+import { SchnCard, SchnEmpty, SchnScrollArea, SchnSkeleton } from './ui';
 
 function shortTime(ms: number): string {
   const d = new Date(ms);
@@ -113,6 +113,8 @@ function SchnTimeSeries({ series, unit, locale }: { series: UiSeries[]; unit?: s
           tickFormatter={(v: number) => formatValue(Number(v), unit)}
         />
         <Tooltip
+          allowEscapeViewBox={{ x: true, y: true }}
+          wrapperStyle={{ zIndex: 100 }}
           content={
             <ChartTooltipContent labelFormatter={fullTime} formatValue={(v) => formatValue(v, unit)} />
           }
@@ -164,6 +166,8 @@ function SchnBars({ series, unit, locale }: { series: UiSeries[]; unit?: string;
           tickFormatter={(v: number) => formatValue(Number(v), unit)}
         />
         <Tooltip
+          allowEscapeViewBox={{ x: true, y: true }}
+          wrapperStyle={{ zIndex: 100 }}
           content={
             <ChartTooltipContent labelFormatter={fullTime} formatValue={(v) => formatValue(v, unit)} />
           }
@@ -210,8 +214,8 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
     <div className="relative min-h-[180px] flex-1">
       <ChartContainer config={config} className="absolute inset-0">
         <PieChart>
-          <Tooltip content={<ChartTooltipContent formatValue={(v) => formatValue(v, unit)} />} />
-          <Pie data={items} dataKey="value" nameKey="name" innerRadius="58%" outerRadius="82%" paddingAngle={2} strokeWidth={0}>
+          <Tooltip allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 100 }} content={<ChartTooltipContent formatValue={(v) => formatValue(v, unit)} />} />
+          <Pie data={items} dataKey="value" nameKey="name" cx="50%" cy="44%" innerRadius="58%" outerRadius="82%" paddingAngle={2} strokeWidth={0}>
             {items.map((it, i) => (
               <Cell key={i} fill={colors[i % colors.length]} />
             ))}
@@ -244,32 +248,34 @@ function SchnTable({ tables, unit, locale }: { tables: UiTable[]; unit?: string;
   const rows = t0.rows.slice(safePage * pageSize, safePage * pageSize + pageSize);
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-zinc-200 dark:border-zinc-800">
-        <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900">
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              {t0.columns.map((c) => (
-                <th key={c.id} className="whitespace-nowrap px-2 py-2 text-left align-middle font-medium text-zinc-500 dark:text-zinc-400">
-                  {c.name}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} className="border-b border-zinc-100 transition-colors last:border-0 hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900/60">
-                {t0.columns.map((c) => {
-                  const v = r[c.id];
-                  return (
-                    <td key={c.id} className="max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100">
-                      {typeof v === 'number' ? formatValue(v, unit) : String(v ?? '')}
-                    </td>
-                  );
-                })}
+      <div className="min-h-0 flex-1">
+        <SchnScrollArea>
+          <table className="w-full text-xs">
+            <thead className="sticky top-0 bg-white dark:bg-zinc-950">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                {t0.columns.map((c) => (
+                  <th key={c.id} className="whitespace-nowrap bg-zinc-50 px-2 py-2 text-left align-middle font-medium text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
+                    {c.name}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} className="border-b border-zinc-100 transition-colors last:border-0 hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900/60">
+                  {t0.columns.map((c) => {
+                    const v = r[c.id];
+                    return (
+                      <td key={c.id} className="max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100">
+                        {typeof v === 'number' ? formatValue(v, unit) : String(v ?? '')}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </SchnScrollArea>
       </div>
       {maxPage > 1 ? (
         <div className="flex items-center justify-end gap-2 pt-2 text-xs text-zinc-500 dark:text-zinc-400">

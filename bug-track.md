@@ -30,3 +30,12 @@
 | 2026-09-19 | `@types/react@18.3` 下 antd icons 4.8 类型报错（`onPointerEnterCapture` 缺失） | antd icons v4 的 Icon 类型与新 JSX 类型不兼容 | legacy/shadcn 统一改 lucide 图标，删 `@ant-design/icons` 依赖 | 已解决 | shadcn 主题 |
 | 2026-09-19 | shadcn 折线/柱状图无图例 | `LineChart/BarChart` 里只放了 Tooltip，漏了 `<Legend content>` | 补 `ChartLegendContent`（截图复验） | 已解决 | shadcn 主题 |
 | 2026-09-19 | shadcn 下 40+ series 图例/tooltip 撑爆布局 | 图例全量换行、tooltip 全量列表（线程池面板） | 图例/tooltip 均收敛为前 12 项 + `+N`（`MAX_LEGEND_ITEMS`），tooltip 保持可读 | 已解决 | shadcn 打磨 |
+| 2026-09-19 | Base UI Select 显示原始 value（`30m`）而非 label | portal 关闭时 items 卸载，`Select.Value` 取不到选中项文本 | 加 `displayValue` 由调用方显式传入展示文案 | 已解决 | shadcn 主题 |
+| 2026-09-19 | shadcn 排版全塌：panel 全宽竖堆 | flex `width: calc(50% - 6px)` 只抵 12px gap 的一半逻辑，shadcn 24px gap 下两项 + gap 超宽换行再被 flex-grow 拉满 | 改 12 列 CSS grid（`span w`），gap 原生处理，换 gap 不再换行 | 已解决 | shadcn 回归 |
+| 2026-09-19 | Base UI 下拉定位到左上角/盖住框体、交互近不可用 | Base UI v1 RC Positioner 定位不稳定（listbox `position: static` 落左上） | 回退 radix（此前截图验证可用）；图表本就 Recharts直用，与 radix/Base 无关，保持 shadcn 样式类 | 已解决 | shadcn 回归 |
+| 2026-09-19 | 点击图表蓝色边框去不掉 | 焦点实际落在 svg 内 `<g>` 上，之前的 wrapper 级 CSS 盖不住 | 补 `.schn svg :focus { outline: none }`，真机点击验 `outline: none` | 已解决 | shadcn 回归 |
+| 2026-09-19 | shadcn 排版二塌：panel 全宽竖堆（24px gap 下） | flex `width: calc(% - 6px)` 按 12px gap 写死，24px gap 下两项挤换行再被拉满 | 改 12 列 CSS grid（`span w` + 按 (y,x) 排序复刻控制台），gap 原生处理 | 已解决 | shadcn 回归 |
+| 2026-09-19 | shadcn 按钮裸奔（2px outset 原生边框） | 不引 preflight 后原生 button 样式残留，toggle/ghost 项缺 `border-0` | toggle 项加 `border-0 bg-transparent`，ghost 同改，`.schn button` 补 `font: inherit` | 已解决 | shadcn 回归 |
+| 2026-09-19 | recharts v3 Pie 不认 `center`（中心字偏上） | v3 只认 `cx/cy`，`center` 被静默忽略，饼心恒 50% | 改 `cx="50%" cy="44%"`，与 HTML 叠加层同源对齐 | 已解决 | shadcn 回归 |
+| 2026-09-19 | shadcn 按钮裸奔（2px outset 原生边框、字比 label 大） | 不引 preflight 后 UA 样式残留；且 `font: inherit` 简写（无层）盖掉了 tailwind `text-xs` | 只补 `font-family: inherit`；toggle/ghost 项加 `border-0 bg-transparent` | 已解决 | shadcn 回归 |
+| 2026-09-19 | 自定义浮层定位飘到左上、灰底只盖工具条 | 浮层放在有 `backdrop-blur` 的工具条内，`fixed inset-0` 以工具条为包含块 | 改 SigNoz 式一体 popover：快选网格 + 自定义同面板，锚定在时间按钮下，无 modal 无全屏灰底 | 已解决 | shadcn 打磨 |

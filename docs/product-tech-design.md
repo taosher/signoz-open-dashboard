@@ -319,7 +319,7 @@ interface ThemeModule {
 
 ### 7.6 shadcn 主题（`?theme=shadcn`）
 
-- 组件库：tailwind（preflight 关闭，不污染 legacy）+ Recharts（对照 `ui.shadcn chart`：ChartContainer 组合 + CSS 变量配色）+ lucide 图标；工具条原生 select/details + tailwind。
+- 组件库：tailwind（preflight 关闭，不污染 legacy）+ Recharts（对照 `ui.shadcn chart`：ChartContainer 组合 + CSS 变量配色）+ Base UI 原语（Select/Popover/ToggleGroup/Checkbox，与图表同体系）+ lucide 图标；
 - 取数/变量/图例/单位语义与 legacy 共用 `core/` + `signoz/`，仅渲染层不同；深浅色同样经 core 上下文（`.schn-dark` class 变体）。
 
 ---

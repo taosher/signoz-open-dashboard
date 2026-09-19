@@ -117,20 +117,23 @@ export function LegacyToolbar(props: ToolbarProps): JSX.Element {
       <Space style={{ marginLeft: 'auto' }} size="small">
         {timeCtl !== 'hidden' ? (
           <>
-            <Select
-              size="small"
-              style={{ width: 150 }}
-              value={timeValue}
-              disabled={timeCtl === 'disabled'}
-              options={presetOptions}
-              onChange={(v) => {
-                if (v === 'custom') {
-                  openCustom();
-                  return;
-                }
-                props.onTimeChange({ relativeTime: v });
-              }}
-            />
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ color: '#666', fontSize: 12 }}>{t.timeLabel}</span>
+              <Select
+                size="small"
+                style={{ width: 150 }}
+                value={timeValue}
+                disabled={timeCtl === 'disabled'}
+                options={presetOptions}
+                onChange={(v) => {
+                  if (v === 'custom') {
+                    openCustom();
+                    return;
+                  }
+                  props.onTimeChange({ relativeTime: v });
+                }}
+              />
+            </span>
             <Modal
               title={t.customTitle}
               open={customOpen}
@@ -157,14 +160,17 @@ export function LegacyToolbar(props: ToolbarProps): JSX.Element {
           </>
         ) : null}
         {refreshCtl !== 'hidden' ? (
-          <Select
-            size="small"
-            style={{ width: 110 }}
-            value={props.refresh === 'inherit' ? 'off' : props.refresh}
-            disabled={refreshCtl === 'disabled'}
-            options={t.refreshOptions}
-            onChange={(v) => props.onRefreshChange(v)}
-          />
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ color: '#666', fontSize: 12 }}>{t.refreshLabel}</span>
+            <Select
+              size="small"
+              style={{ width: 110 }}
+              value={props.refresh === 'inherit' ? 'off' : props.refresh}
+              disabled={refreshCtl === 'disabled'}
+              options={t.refreshOptions}
+              onChange={(v) => props.onRefreshChange(v)}
+            />
+          </span>
         ) : null}
         {modeCtl !== 'hidden' && props.mode !== undefined && props.onModeChange ? (
           <Segmented

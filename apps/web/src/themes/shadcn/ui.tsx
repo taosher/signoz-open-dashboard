@@ -5,6 +5,7 @@
 import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { twMerge } from 'tailwind-merge';
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
 export function cn(...inputs: (string | undefined | false)[]): string {
   return twMerge(clsx(...inputs));
@@ -17,13 +18,13 @@ export function SchnButton(
   return (
     <button
       className={cn(
-        'inline-flex items-center justify-center gap-1.5 rounded-md font-medium transition-colors',
+        'inline-flex items-center justify-center gap-1.5 rounded-md border-0 font-medium transition-colors',
         'focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50',
         size === 'sm' && 'h-7 px-2.5 text-xs',
         variant === 'default' && 'bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200',
         variant === 'outline' &&
           'border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900',
-        variant === 'ghost' && 'text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-900',
+        variant === 'ghost' && 'border-0 bg-transparent text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-900',
         className,
       )}
       {...rest}
@@ -75,5 +76,23 @@ export function SchnEmpty({ text }: { text: string }): JSX.Element {
     <div className="flex min-h-[120px] flex-1 items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
       {text}
     </div>
+  );
+}
+
+/** shadcn ScrollArea：细滚动条（表格主体等自有滚动容器用）。 */
+export function SchnScrollArea({ children, className }: { children: ReactNode; className?: string }): JSX.Element {
+  return (
+    <ScrollAreaPrimitive.Root type="auto" className={cn('h-full w-full overflow-hidden', className)}>
+      <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {children}
+      </ScrollAreaPrimitive.Viewport>
+      <ScrollAreaPrimitive.Scrollbar
+        orientation="vertical"
+        className="flex w-2 touch-none select-none p-px transition-colors"
+      >
+        <ScrollAreaPrimitive.Thumb className="relative flex-1 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+      </ScrollAreaPrimitive.Scrollbar>
+      <ScrollAreaPrimitive.Corner />
+    </ScrollAreaPrimitive.Root>
   );
 }

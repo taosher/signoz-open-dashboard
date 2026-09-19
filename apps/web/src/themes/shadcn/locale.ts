@@ -15,6 +15,8 @@ export interface ShadcnStrings {
   refreshOptions: { value: string; label: string }[];
   fullscreen: string;
   exitFullscreen: string;
+  timeLabel: string;
+  refreshLabel: string;
   light: string;
   dark: string;
   chinese: string;
@@ -64,6 +66,8 @@ const ZH: ShadcnStrings = {
   unsupportedPanel: '暂不支持的 panel',
   prevPage: '上一页',
   nextPage: '下一页',
+  timeLabel: '时间',
+  refreshLabel: '刷新',
   errorTitle: {
     EMBED_MISSING_API_KEY: '缺少 API Key',
     EMBED_INVALID_API_KEY: 'API Key 无效或无查看权限',
@@ -111,6 +115,8 @@ const EN: ShadcnStrings = {
   unsupportedPanel: 'Unsupported panel',
   prevPage: 'Previous',
   nextPage: 'Next',
+  timeLabel: 'Time',
+  refreshLabel: 'Refresh',
   errorTitle: {
     EMBED_MISSING_API_KEY: 'Missing API Key',
     EMBED_INVALID_API_KEY: 'Invalid API key or insufficient permission',

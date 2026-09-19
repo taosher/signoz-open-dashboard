@@ -15,6 +15,8 @@ export interface LegacyStrings {
   refreshOptions: { value: string; label: string }[];
   fullscreen: string;
   exitFullscreen: string;
+  timeLabel: string;
+  refreshLabel: string;
   light: string;
   dark: string;
   chinese: string;
@@ -52,6 +54,8 @@ const ZH: LegacyStrings = {
   ],
   fullscreen: '全屏',
   exitFullscreen: '退出全屏',
+  timeLabel: '时间',
+  refreshLabel: '刷新',
   light: '浅色',
   dark: '深色',
   chinese: '中文',
@@ -97,6 +101,8 @@ const EN: LegacyStrings = {
   ],
   fullscreen: 'Fullscreen',
   exitFullscreen: 'Exit fullscreen',
+  timeLabel: 'Time',
+  refreshLabel: 'Refresh',
   light: 'Light',
   dark: 'Dark',
   chinese: '中文',

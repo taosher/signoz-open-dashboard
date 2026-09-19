@@ -11,4 +11,45 @@
 .schn {
   font-family:
     Inter, -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  color-scheme: light;
+}
+
+.schn-dark {
+  color-scheme: dark;
+}
+
+/* 不引 preflight（保 legacy），故此处补原生控件基准。
+ * 注意：不能写 `font: inherit` 简写——无层样式会盖掉 tailwind 的 text-xs，
+ * 只补 preflight 中与工具类无冲突的 font-family。 */
+.schn button {
+  font-family: inherit;
+}
+
+/* radix 内部下拉/浮层列表的细滚动条（shadcn 观感；table 主体用 ScrollArea 原语） */
+.schn .schn-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(212 212 216) transparent;
+}
+.schn-dark .schn-scroll {
+  scrollbar-color: rgb(39 39 42) transparent;
+}
+.schn .schn-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.schn .schn-scroll::-webkit-scrollbar-thumb {
+  background: rgb(212 212 216);
+  border-radius: 9999px;
+}
+.schn-dark .schn-scroll::-webkit-scrollbar-thumb {
+  background: rgb(39 39 42);
+}
+
+/* Recharts 可访问性焦点框：点击图表不出现蓝色边框。
+ * 实测焦点落在 svg 内 <g> 上（wrapper div 规则盖不住），故全域覆盖 svg 内焦点。 */
+.schn .recharts-wrapper:focus,
+.schn .recharts-wrapper:focus-visible,
+.schn .recharts-surface:focus,
+.schn svg:focus,
+.schn svg :focus {
+  outline: none;
 }

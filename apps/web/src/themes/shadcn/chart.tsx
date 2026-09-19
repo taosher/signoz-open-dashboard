@@ -9,26 +9,26 @@ import { formatValue } from '../../signoz/format';
 
 export type ChartConfig = Record<string, { label?: string; color?: string }>;
 
-/** 明暗各 8 色：整体偏蓝（对照 shadcn area 蓝调），多 series 仍可区分。 */
+/** 明暗各 8 色：蓝色打头保证主题感，其余拉开色相/明度保证多 series 可辨（见 bug-track）。 */
 export const SCHN_CHART_COLORS_LIGHT = [
   '#2563eb',
-  '#0ea5e9',
-  '#4f46e5',
-  '#0891b2',
+  '#0d9488',
+  '#7c3aed',
   '#0284c7',
-  '#38bdf8',
-  '#6366f1',
-  '#22d3ee',
+  '#65a30d',
+  '#ea580c',
+  '#475569',
+  '#0891b2',
 ];
 export const SCHN_CHART_COLORS_DARK = [
   '#60a5fa',
-  '#38bdf8',
-  '#818cf8',
-  '#22d3ee',
-  '#7dd3fc',
-  '#67e8f9',
-  '#a5b4fc',
   '#2dd4bf',
+  '#a78bfa',
+  '#38bdf8',
+  '#a3e635',
+  '#fb923c',
+  '#94a3b8',
+  '#22d3ee',
 ];
 
 /** 图例/tooltip 超长收敛：最多展示项数，超出以 `+N` 收尾（40+ series 不再撑爆布局）。 */

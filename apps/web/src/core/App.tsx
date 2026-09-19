@@ -177,6 +177,12 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
   const dd = dash.dashboard.data;
   const widgets = (dd.widgets ?? []).filter((w) => String(w.panelTypes) !== 'row' && w.id);
   const layoutById = new Map((dd.layout ?? []).map((l) => [l.i, l]));
+  // 按看板 layout (y,x) 排序后再按 w 跨列，复刻控制台排版（App 只做顺序+跨列，不解释 x 偏移）
+  const ordered = [...widgets].sort((a, b) => {
+    const la = layoutById.get(a.id);
+    const lb = layoutById.get(b.id);
+    return (la?.y ?? 0) - (lb?.y ?? 0) || (la?.x ?? 0) - (lb?.x ?? 0);
+  });
   const variables = varsDef;
 
   const toggleFullscreen = (): void => {
@@ -191,7 +197,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
     <ColorModeProvider mode={mode}>
       <Tokens>
         <ConfigProvider locale={locale === 'en' ? enUS : zhCN}>
-    <div style={{ minHeight: '100vh', background: mode === 'dark' ? '#141414' : '#f5f5f5' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Toolbar
         title={dd.title}
         showTitle={params.title}
@@ -218,17 +224,25 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
         isFullscreen={isFullscreen}
         onFullscreenToggle={toggleFullscreen}
       />
-      <div style={{ padding: 12 }}>
-        {widgets.length === 0 ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="该看板暂无 panel" />
+      {/* 页面底色/间距由主题经 CSS 变量提供（--embed-page-bg/--embed-page-pad/--embed-grid-gap），core 只给 fallback。
+          12 列 grid 按看板 layout 跨列（gap 由 grid 原生处理，无需 calc 抵扣，换 gap 不会再挤换行，见 bug-track） */}
+      <div style={{ padding: 'var(--embed-page-pad, 12px)' }}>
+        {ordered.length === 0 ? (
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={false} />
         ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {widgets.map((w) => {
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
+              gap: 'var(--embed-grid-gap, 12px)',
+            }}
+          >
+            {ordered.map((w) => {
               const l = layoutById.get(w.id);
-              const spanPct = l ? Math.max(25, Math.min(100, (l.w / 12) * 100)) : 100;
+              const span = l ? Math.max(1, Math.min(12, Math.round(l.w))) : 12;
               const hPx = l ? Math.max(300, l.h * 34) : 320;
               return (
-                <div key={w.id} style={{ width: `calc(${spanPct}% - 6px)`, minWidth: 320, flexGrow: 1 }} title={widgetTitle(w)}>
+                <div key={w.id} style={{ gridColumn: `span ${span}`, minWidth: 0 }} title={widgetTitle(w)}>
                   <div style={{ height: hPx }}>
                     <WidgetSlot
                       theme={theme}
