@@ -2,20 +2,10 @@
 
 Turn SigNoz into a universal embedded business dashboard — drop any live dashboard into your product, portal, or big screen with a single iframe.
 
-```html
-<iframe
-  src="https://embed.example.com/embed/<dashboardId>?apiKey=<key>&relativeTime=30m&theme=shadcn&mode=light"
-  style="width:100%;border:0"
-  allowfullscreen>
-</iframe>
-```
 
 ![Live business dashboards embedded anywhere](docs/screenshots/demo.jpeg)
 
 Your metrics already live in SigNoz. Your users — customers checking service health, ops watching a NOC wall, teammates reading a weekly report — don't. This project bridges that gap: it serves every SigNoz dashboard as a **portable, read-only, live widget** that renders anywhere an iframe can go. No login page, no SigNoz account for viewers, no frontend to build — just a URL.
-
-> [!NOTE]
-> The canonical spec is `docs/product-tech-design.md`. If this README ever disagrees with it, the design doc wins.
 
 ## Why embed
 
@@ -70,6 +60,16 @@ Connectivity probe (against SigNoz directly):
 ```bash
 curl -H "SIGNOZ-API-KEY: <key>" \
   http://<signoz-host>:30303/api/v1/dashboards/<dashboardId>
+```
+
+Then you can embed the dashboard into a third-party website with a single iframe: 
+
+```html
+<iframe
+  src="https://embed.example.com/embed/<dashboardId>?apiKey=<key>&relativeTime=30m&theme=shadcn&mode=light"
+  style="width:100%;border:0"
+  allowfullscreen>
+</iframe>
 ```
 
 ## Embed URL
