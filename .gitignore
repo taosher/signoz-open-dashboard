@@ -6,6 +6,9 @@ coverage/
 .DS_Store
 apps/web/dist/
 apps/api/dist/
-apps/web/third_party/
+apps/api/web-dist/
+# SigNoz 参考快照（可由 take-snapshot.sh 再生，不入库）
+apps/web/third_party/signoz-0.97.0/
 .env
+.env.development
 .env*.local

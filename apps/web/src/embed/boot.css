@@ -1,5 +1,0 @@
-/* 嵌入页自身样式（原生 styles.scss 之外的最小补充） */
-#embed-root {
-  height: 100vh;
-  overflow: auto;
-}

@@ -1,9 +1,0 @@
-// @ts-nocheck - SigNoz 0.97.0 verbatim vendor (see third_party/PATCHES.md)
-// this list must exactly match with the backend
-export enum AlertTypes {
-	ANOMALY_BASED_ALERT = 'ANOMALY_BASED_ALERT',
-	METRICS_BASED_ALERT = 'METRIC_BASED_ALERT',
-	LOGS_BASED_ALERT = 'LOGS_BASED_ALERT',
-	TRACES_BASED_ALERT = 'TRACES_BASED_ALERT',
-	EXCEPTIONS_BASED_ALERT = 'EXCEPTIONS_BASED_ALERT',
-}

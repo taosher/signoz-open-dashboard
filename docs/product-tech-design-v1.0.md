@@ -21,7 +21,7 @@ SigNoz 开源版曾有 Dashboard 分享/嵌入能力，后收敛到商业版。�
 
 ```html
 <iframe
-  src="https://embed.example.com/embed/019ca330-42b0-7a60-b882-1e607e047942?apiKey=ecsOdMuggJlvmZJmscvMtXlL9HyHKOyv00nwhPubfG8=&from=now-6h&to=now&theme=light&locale=zh"
+  src="https://embed.example.com/embed/019ca330-42b0-7a60-b882-1e607e047942?apiKey=ecsOdMuggJlvmZJmscvMtXlL9HyHKOyv00nwhPubfG8=&from=now-6h&to=now&theme=legacy&locale=zh"
   style="width:100%;border:0"
   allowfullscreen>
 </iframe>
@@ -78,7 +78,7 @@ Alert / Annotation / Lock 结论：Phase 1 = 藏 Alert + 藏 Lock + 只读显 An
 └─────────────────────────────────────────┘
 ```
 
-- Monorepo：`apps/api`（NestJS）+ `apps/web`（复刻前端）+ `packages/shared`（URL 参数解析、类型、错误码）。
+- Monorepo：`apps/api`（NestJS）+ `apps/web`（主题插件架构自研前端，见 §7）+ `packages/shared`（URL 参数解析、类型、错误码）。
 - 单容器一体部署：`web build → api build → node runtime serve`，无 Nginx，NestJS 直接 serve。
 - 无状态透传：NestJS 不缓存 query 结果，不存 Key，只做 header 注入 + 超时 + 日志脱敏 + 错误归一。
 - 前端单例：一个 iframe 只渲染一个 Dashboard，路由 `/embed/:dashboardId`。
@@ -104,8 +104,9 @@ Base：`{EMBED_ORIGIN}/embed/:dashboardId`
 |---|---|---|---|---|
 | `apiKey` | `?apiKey=ecsO...` | 否 | `env.SIGNOZ_API_KEY` | 覆盖默认值。优先级 URL > env。无则 401 空态 |
 | `relativeTime` / `startTime`+`endTime` | `6h` 或 epoch | 否 | `6h` | 原生参数名；`from/to` 兼容翻译。不跟随 Dashboard 保存时间 |
-| `theme` | `light` / `dark` | 否 | `light` | 入口预置 `localStorage.THEME` 后交原生 `ThemeProvider`，`?theme=` 可覆盖 |
-| `locale` | `zh` / `en` | 否 | `zh` | 入口 `i18n.changeLanguage`，文案走原生 locales |
+| `theme` | `legacy`（未来可扩展） | 否 | `legacy` | 主题注册表见 §7.2，未知值回退 `legacy`；各主题可用不同组件库 |
+| `mode` | `light` / `dark` | 否 | `light` | 深浅色（与主题正交，见 §7.4-5）；未知值回退 `light` |
+| `locale` | `zh` / `en` | 否 | 跟随主题默认 | 语言由当前主题实现，core 不规定 |
 | `refresh` | `off` / `30s` / `1m` / `5m` | 否 | 继承 Dashboard 保存值 | 允许最大值钳制 `>=10s`，防刷爆 |
 | `annotations` | `true` / `false` | 否 | `true` | 预留（开源 0.97.0 无上游接口，暂无数据源） |
 | `var-<name>` | `?var-env=prod` | 否 | Dashboard 默认值 | URL 优先级最高，覆盖 Dashboard 默认 + localStorage |
@@ -170,9 +171,9 @@ signoz-open-dashboard/
         proxy/signoz-proxy.controller.ts  # /api/signoz/* 全量透传
         proxy/signoz-proxy.service.ts     # 注入 SIGNOZ-API-KEY
         observability/ # logging interceptor 脱敏, metrics controller
-    web/  # 独立 Vite+React 嵌入应用（同契约实现，见 §7）
-      third_party/signoz-0.97.0/ # 只读参考快照 + PATCHES.md（不参与构建）
-      src/  # 嵌入应用源码
+    web/  # 独立 Vite+React 嵌入应用（主题插件架构，见 §7）
+      third_party/ # take-snapshot.sh（参考快照生成器）+ PATCHES.md（语义对照）
+      src/  # core/ + signoz/ + themes/（见 §7.1）
   packages/shared/
     embedParams.ts  # parse/serialize/validate
     errors.ts       # EMBED_xxx 错误码
@@ -184,9 +185,9 @@ Node：`20 LTS`（兼容 SigNoz `engines >=16.15`，锁定 20）。
 
 ### 5.2 版本锁定策略
 
-- `apps/web/src/vendor/` 为 SigNoz `v0.97.0` 渲染子树的逐字搬运（`git archive` 提取，见 `third_party/PATCHES.md` 文件清单），补丁仅限鉴权/入口/只读裁剪四类（P1–P8，逐条记录）。M3 评审结论：以 100% 复原为第一原则，放弃同契约重写路线。
-- 打包仍用 Vite（仅为构建工具，不影响像素），`antd` 精确 pin `5.11.0`，`uplot`/`@grafana/data`/`visx`/`react-query`/`redux` 与原生同版本。
-- SigNoz 后端也锁定 0.97.0 API（`/api/v3|v4|v5/query_range`、`POST /api/v2/variables/query`、`POST .../substitute_vars`），未知字段透传不校验。
+- `apps/web/third_party/signoz-0.97.0/` 为 SigNoz `v0.97.0` 只读参考快照（`take-snapshot.sh` 可再造，不入库），仅供查询语义对照，不参与构建、不逐字搬运。M4 评审结论：彻底放弃 100% 复原路线（逐字搬运的依赖闭包与 Provider 链成本过高，且与主题扩展目标冲突），回到自研 UI + 主题插件架构。
+- 前端依赖由各主题自行声明（legacy 见 §7.3）；构建仍用 Vite。
+- SigNoz 后端 API 锁定 0.97.0（`/api/v3|v4|v5/query_range`、`POST /api/v2/variables/query`、`POST .../substitute_vars`），未知字段透传不校验。
 
 ---
 
@@ -217,7 +218,8 @@ Controller：`ALL /api/signoz/*` → `stripPrefix → SIGNOZ_BASE_URL + path + q
 | `/api/v4/query_range` | POST | 是 | 透传 |
 | `/api/v5/query_range` | POST | 是（主，`getQueryRangeV5`） | 透传 |
 | `/api/v5/substitute_vars` | POST | 是 | 透传 |
-| `/api/v2/variables/query` | POST | 是（`dashboardVariablesQuery.ts`） | 透传 |
+| `/api/v2/variables/query` | POST | 是（QUERY 型变量候选） | 透传 |
+| `/api/v1/fields/values` | GET | 是（DYNAMIC 型变量候选，`normalizedValues`） | 透传 |
 | `/api/v1/version`, `/api/v1/features` | GET | 弱 | 透传或本地 stub |
 | `/api/v1/rules`, `/alerts`, `/channels`, `/user/*`, `/org/*`, `/invite/*` | * | 否 | 403 `EMBED_BLOCKED`，不透传 |
 | 其余未知 `/api/*` | * | 否 | 默认 403 deny-list |
@@ -254,35 +256,70 @@ proxyReq.removeHeader('authorization','cookie');
 
 ---
 
-## 7. 前端（apps/web）设计：逐字搬运 + 四类补丁
+## 7. 前端（apps/web）设计：主题插件架构（M3 评审结论，以自研 UI 为第一原则）
 
-### 7.1 Vendor 清单（`src/vendor/`，`git archive v0.97.0` 提取，补丁见 `third_party/PATCHES.md`）
+> 方向声明：放弃 100% 复原 SigNoz UI。前端使用 SigNoz 的数据契约（v5 查询语义），渲染层全部自研。
+> `apps/web/third_party/signoz-0.97.0/` 仅为只读参考快照（`take-snapshot.sh` 生成，可再造，不入库），供查询语义对照，不参与构建、不逐字搬运。
 
-渲染子树（原样运行）：`container/GridCardLayout`（GridCard/WidgetHeader/FullView/EmptyWidget）、`container/PanelWrapper`（Uplot/Pie/Table/Value/List/Histogram）、`container/NewDashboard`（GridGraphs/Description/变量选择）、`container/TopNav`（DateTimeSelectionV2/AutoRefresh）、`container/QueryTable/Drilldown` + `periscope` 右键菜单、`container/GridTableComponent`、`container/GridValueComponent`、`components/{Uplot,Graph,QueryBuilderV2/utils,CustomTimePicker,NotFound,Spinner,ErrorModal}`。
+### 7.1 分层：core（不变）+ themes（可插拔）
 
-支撑层（原样运行）：`api/`、`constants/`、`types/`、`lib/`、`store/`、`utils/`、`hooks/`、`providers/{Dashboard,Timezone,ErrorModalProvider}`、`ReactI18` + `public/locales`。
+```
+apps/web/src/
+  core/        # 与主题无关：路由(/embed/:id)、鉴权(内存 Key)、取数 hooks、
+               # 时间/变量/刷新状态、replaceState、iframe-resizer、空态与错误映射
+  signoz/      # SigNoz 数据契约实现：v5 payload 装配、响应解析、panel/requestType 映射、
+               # 单位格式化（对照快照，逻辑一致即可，不求逐行相同）
+  themes/
+    registry.ts      # 主题注册表：name → ThemeModule；未知 name 回退 legacy
+    legacy/          # 默认主题（?theme= 缺省/legacy）：antd + echarts 系自研 UI
+    <future>/        # 未来主题：可用任意组件库（如 shadcn 系），只需实现 ThemeModule 契约
+```
 
-仅四类补丁（P1 鉴权：`api/index.ts` 同源 baseURL + key 头，去 JWT 刷新/Logout；P2 遥测：`logEvent` noop；P3 入口：MemoryRouter + QueryClient + redux + AppContext 桩 + 时区/主题/时间 URL 预置；P4 只读：编辑类菜单项过滤）。`@sentry/react` 以空模块 alias 桩掉。
+### 7.2 ThemeModule 契约（新增主题唯一需要实现的接口）
 
-删（不搬运）：`AppRoutes` 全量、`Login/SignUp`、`Billing/License`、`Settings/Org`、`AlertList/CreateAlert`、`DashboardSettings` 编辑、`ShareModal`、`Lock/Unlock`、`Alerts` tab。`echarts` 依赖移除（原生不用）。
+```ts
+interface ThemeModule {
+  name: string;                       // 如 'legacy'，与 ?theme= 取值对应
+  TokensProvider: ComponentType;      // 主题 token（CSS 变量 / ConfigProvider / echarts theme 等）
+  Toolbar: ComponentType<ToolbarProps>;   // 极简工具条（标题+时间+刷新+变量+全屏），允许各主题形态不同
+  WidgetCard: ComponentType<WidgetProps>; // 按 panelTypes 分发渲染（graph/table/list/pie/bar/histogram/value）
+  ErrorState: ComponentType<ErrorProps>;  // EMBED_ 错误码空态 + Retry + requestId
+}
+```
 
-### 7.2 关键改造点
+- `ToolbarProps` 允许扩展可选字段（如 `variableOptions` 解析候选、`mode/onModeChange` 深浅切换），新主题可忽略；必填契约不变。
+- core 只依赖该契约，不依赖任何主题的具体组件库；新增主题不得修改 core（除 registry 注册一行）。
+- 各主题自带依赖（如 legacy 用 antd/echarts，未来主题用 shadcn 系），互不污染；构建时全量打包，运行时按 `?theme=` 选择。
+- Dashboard 级别体验（UTC、只读 grid、变量优先级、replaceState、Key 只放内存）由 core 保证，各主题不得破坏。
 
-1. **登录态**：`isLoggedIn` → `isEmbedAuthorized = !!effectiveApiKey`。`providers/App/App.tsx` 的 user/license/feature hooks 全部 `enabled:false`；`Dashboard.tsx:274` 改为 `enabled: !!dashboardId && isEmbedAuthorized`；`api/index.ts` 删除 `Authorization: Bearer` + 401 refresh+Logout 分支。
-2. **axios**：五个实例 `baseURL` 全改为同源 `/api/signoz/api/vX`，request 拦截器从内存 `EmbedAuthContext` 取 key 写 `x-embed-api-key`。
-3. **路由**：仅注册 `/embed/:dashboardId`，`DashboardProvider` 的 `useRouteMatch(ROUTES.DASHBOARD)` 改为匹配 `/embed/:dashboardId`，`DASHBOARD_WIDGET`（`:widgetId` 全屏）保留 param 兼容。
-4. **时间/变量**：挂载时 `parseEmbedParams(location.search)` → dispatch globalTime（默认 `now-6h~now` UTC）→ variables `var-*` 最高优先级合并 → 之后任何变更 `replaceState` 回写 URL。
-5. **主题/语言**：`?theme=light` 默认，`ConfigProvider theme.algorithm` 切换；`?locale=zh/en` 切 `i18next.changeLanguage`。
-6. **Grid 只读**：`react-grid-layout` `isDraggable=false isResizable=false static=true`；`WidgetHeader` 只渲染查看类。
-7. **Annotation**：开源 0.97.0 无对应上游接口，`?annotations=` 只解析保留，渲染层预留开关位，不发请求（见 §7.1 注）。
-8. **iframe-resizer child**：`useEffect` 里引入 `@iframe-resizer/child` + `ResizeObserver`。
-9. **错误页**：按 §6.4 code 渲染 `Empty + icon + 文案 + requestId + Retry`。
+### 7.3 legacy 主题（默认，P0 范围）
+
+- 组件库：antd（5.x，主版本锁定后不再升级）+ echarts 系自研图表，视觉贴近 SigNoz 浅色控制台即可，不做像素级对齐；`?mode=dark` 时切 antd 暗算法 + 深色图表前景，浅色为默认。
+- 复用 `src/signoz/` 的查询语义（requestType 映射、builder/formula/promql/CH 信封、毫秒时间、table 格式化开关；legend 优先级 alias > legend > expression）。
+- 保留项（查看类）：时间选择、自动刷新、变量展示、Widget 全屏/下载 CSV、tooltip、图例 toggle。裁掉项（编辑类）：Add Panel/Edit/Clone/Delete/Settings/Lock/Alerts。
+- 时区强制 UTC；Annotation：开源 0.97.0 无上游接口，`?annotations=` 只解析保留。
+
+### 7.4 关键行为（core 保证，与主题无关）
+
+1. **登录态**：无 JWT；`apiKey(URL) ?? env.SIGNOZ_API_KEY`，内存存放，不写 localStorage。
+2. **请求**：一律同源 `/api/signoz/*`，拦截器附 `x-embed-api-key`（无则不带）。
+3. **路由**：仅 `/embed/:dashboardId`。
+4. **时间/变量**：默认 `now-6h~now` UTC；`var-*` 优先级最高；变更 `replaceState` 回写（不回写 env 默认 key）。变量一律按 `name` 归一（看板 JSON 以 id 为键，`name` 为准）；QUERY 型经 `/api/v2/variables/query`、DYNAMIC 型经 `/api/v1/fields/values` 解析候选，无历史选择时多选默认全选、单选取默认值或首候选。
+5. **主题/语言/深浅色**：`?theme=legacy` 默认（未知值回退 legacy）；`?mode=light/dark` 默认 light（未知值回退 light），由 core 经上下文提供，各主题自行表达；语言跟随主题实现，core 不规定。
+6. **Grid 只读**：不可拖拽；`?annotations=` 预留。
+7. **iframe-resizer child**：core 统一接入。
+8. **错误页**：core 按 §6.4 code 映射，主题只负责样式表达。
+
+### 7.5 升级策略（锁定 0.97.0 API，不跟随前端版本）
+
+- 后端 API 锁定 0.97.0（`/api/v3|v4|v5/query_range`、`POST /api/v2/variables/query`、`POST .../substitute_vars`），未知字段透传不校验。
+- 参考快照仅用于新人理解查询语义；SigNoz 后续版本的前端变更与本仓库无关，无需合 patch。
 
 ---
 
 ## 8. 共享包（packages/shared）
 
-- `parseEmbedParams(search)` + 校验（UUID、theme/locale 白名单、refresh 正则）。
+- `parseEmbedParams(search)` + 校验（UUID、`theme` 注册表名、`locale`、refresh 正则）。
 - `serializeEmbedParams`（replaceState 用，若入参自带 key 则保留，否则不追加 env 默认 key，避免泄漏服务端默认 key）。
 - `EmbedError { code, httpStatus, requestId, message }` 类型前后端共用。
 
@@ -322,34 +359,35 @@ CMD ["node","dist/main.js"]
 
 冒烟 Dashboard：`019ca330-...（系统资源总览）` + 需再准备一个含 variables + table 的 Dashboard。
 
-| # | 用例 | 期望 | 实测（2026-09-18，真后端联调） |
+| # | 用例 | 期望 | 状态 |
 |---|---|---|---|
-| 1 | 无 `apiKey` + env 有默认 | 200 渲染 4 panels，与控制台截图一致 | 通过（header/env/query 三路 key 均 200，4 canvas） |
-| 2 | `?apiKey=错` | 401 `EMBED_INVALID_API_KEY` 空态 + requestId | 通过（页面空态 + requestId + 重试） |
-| 3 | 错 ID | 404 空态 | 通过（`EMBED_DASHBOARD_NOT_FOUND` + requestId + 重试） |
-| 4 | 全参 | 与控制台同参一致，replaceState 回写 | 通过（theme/dark、locale/en、var-* 解析与回写经单测；locale 预设中文化 bug 已修） |
-| 5 | 断 Upstream | 502 + Retry，恢复后自愈 | 部分通过（`/healthz` degraded 标记已实现；`EMBED_UPSTREAM_UNAVAILABLE` 映射已实现，未做断网实演） |
-| 6 | iframe-resizer 父接入/未接入 | 高度自适应 / 降级内部滚动 | 部分通过（子端 `@iframe-resizer/child` 已接入且守卫降级；未做父页面实演） |
-| 7 | Chrome 108 | 无白屏 | 配置级通过（vite `target: chrome108`，antd5/echarts5 同代；手头无 Chrome108 实机） |
-| 8 | 只读 | DOM 无 `Edit/Clone/Delete/Add Panel/Lock` | 通过（编辑类入口未实现；写接口 403 `READONLY`） |
-| 9 | `/healthz` `/metrics` | 指标正常，日志无明文 key | 通过（`apiKey=***`，仅 hash8 指纹） |
-| 10 | 几十 panels | 首屏可接受，无 OOM | 未测（测试看板仅 4 panels；无状态透传，无服务端缓存） |
+| 1 | 无 `apiKey` + env 有默认 | 200 渲染 4 panels | 通过（后端已验收；前端待 legacy 主题重实现后复验） |
+| 2 | `?apiKey=错` | 401 `EMBED_INVALID_API_KEY` 空态 + requestId | 通过（后端映射；前端按 §7.4-8 重实现） |
+| 3 | 错 ID | 404 空态 | 通过（同上） |
+| 4 | 全参 | 参数解析 + replaceState 回写 | 待复验（`theme=legacy` 新语义 + `from/to` 兼容翻译） |
+| 5 | 断 Upstream | 502 + Retry，恢复后自愈 | 部分通过（后端已实现，未做断网实演） |
+| 6 | iframe-resizer 父接入/未接入 | 高度自适应 / 降级内部滚动 | 待实现（core 统一接入） |
+| 7 | Chrome 108 | 无白屏 | 待验（vite `target: chrome108` 保留） |
+| 8 | 只读 | 无编辑类入口；写接口 403 | 通过（后端 `READONLY`/`BLOCKED`；前端不实现编辑入口） |
+| 9 | `/healthz` `/metrics` | 指标正常，日志无明文 key | 通过 |
+| 10 | 几十 panels | 首屏可接受，无 OOM | 未测 |
+| 11 | `?theme=未知值` | 回退 legacy | 待实现（registry 回退逻辑 + 单测） |
 
-备注：验收截图改用浏览器 DOM 断言替代（CDP 截图通道在当前环境超时，见 `bug-track.md`）；含 variables + table 的第二看板需 Owner 在测试后端另配，`var-*` 透传已用单测 + `?var-region=` 实页验证。
+备注：不再做与控制台的像素级截图 diff（方向已改为视觉贴近，见 §7）；含 variables + table 的第二看板仍需 Owner 另配。
 
 ---
 
-## 12. 里程碑
+## 12. 里程碑（M4 修订版：回退自研 UI + 主题插件化）
 
-- M1（3d）：monorepo + NestJS 透传 + `/healthz` + Docker 跑通 + curl 矩阵全绿。
-- M2（5d）：web vendor + 登录态/axios/路由/工具条/UTC/light/replaceState + 单 Dashboard 冒烟一致。
-- M3（3d）：变量全量 + annotations + 全 widget + iframe-resizer + Chrome108 + 空态 + 日志脱敏审计。
-- M4（2d）：compose + 验收截图 diff（控制台 vs 嵌入，并排）。
+- M1（已完成）：monorepo + NestJS 透传 + `/healthz` + `/metrics` + curl 矩阵全绿。
+- M5（前端重做）：`core/`（路由/鉴权/取数/时间变量/replaceState/空态映射）+ `signoz/`（查询语义）+ `themes/legacy`（默认主题全量 panel）+ registry 回退；冒烟 Dashboard 渲染验收。
+- M6：iframe-resizer、Chrome108、断网演练、第二看板（variables+table）、文档收尾。
+- 已归档（不再执行）：M2–M4 旧计划（自研 UI 初版已验证后废弃）、100% 复刻路线（vendor 已删除，见 bug-track 决策记录）。
 
 ## 13. 风险
 
 - Key 全权限 + 公开 iframe 被刷 → 文档警告 + throttle + refresh floor。
-- SigNoz 0.97.0 前端依赖巨多，vendor 瘦身遗漏即构建爆 → M2 先全量拷再 tree-shake。
+- 主题膨胀：新增主题只许加 `themes/<name>/` + registry 一行，禁止改 core；core 出现主题分支时必须重构回契约。
 - `iframe-resizer` 与 React18 StrictMode/antd 弹层高度抖动 → 用 `lowestElement` + 防抖。
 
 ---

@@ -43,9 +43,12 @@ export function decideProxy(method: string, upstreamPath: string): ProxyDecision
   }
 
   // 元信息：GET 透传（healthz 探测 version 不经过代理也可用，但前端直调时需要）
+  // DYNAMIC 型变量候选（设计文档 §6.2）：GET /api/v1/fields/values?signal=&name=
   if (
     m === 'GET' &&
-    (p === '/api/v1/version' || p === '/api/v1/features')
+    (p === '/api/v1/version' ||
+      p === '/api/v1/features' ||
+      p === '/api/v1/fields/values')
   ) {
     return { allowed: true };
   }

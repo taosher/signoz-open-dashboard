@@ -39,9 +39,12 @@ describe('proxy.allowlist（设计文档 §6.2）', () => {
     }
   });
 
-  it('允许 version/features GET，其余一律 403', () => {
+  it('允许 version/features/fields-values GET，其余一律 403', () => {
     expect(decideProxy('GET', '/api/v1/version')).toEqual({ allowed: true });
     expect(decideProxy('GET', '/api/v1/features')).toEqual({ allowed: true });
+    expect(
+      decideProxy('GET', '/api/v1/fields/values?signal=metrics&name=service.name'),
+    ).toEqual({ allowed: true });
     expect(decideProxy('GET', '/api/v1/rules')).toEqual({
       allowed: false,
       code: 'EMBED_BLOCKED',

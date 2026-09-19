@@ -12,7 +12,7 @@
     "build:api": "pnpm --filter @signoz-open-dashboard/api build",
     "build:shared": "pnpm --filter @signoz-open-dashboard/shared build",
     "build:web": "pnpm --filter @signoz-open-dashboard/web build",
-    "dev:api": "pnpm --filter @signoz-open-dashboard/api start:dev",
+    "dev:api": "NODE_ENV=development pnpm --filter @signoz-open-dashboard/api start:dev",
     "dev:web": "pnpm --filter @signoz-open-dashboard/web dev",
     "test": "pnpm -r test",
     "test:api": "pnpm --filter @signoz-open-dashboard/api test",

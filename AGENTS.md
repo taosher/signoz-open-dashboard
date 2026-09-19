@@ -10,8 +10,8 @@
 
 ## 2. 仓库现状与边界
 
-- 本仓库目标结构（见设计文档 §5.1）：`apps/api`（NestJS）+ `apps/web`（复刻 SigNoz 前端）+ `packages/shared` + 单 Docker 镜像。M1 已落地 monorepo 空架（`apps/web` 为占位构建，M2 复刻前端），命令见 §4。
-- SigNoz 参考实现是只读的：`~/develop/open-source/signoz @ v0.97.0`。禁止修改它；复用前端走 `third_party/signoz-0.97.0` 快照 + `PATCHES/` 记录 diff。
+- 本仓库目标结构（见设计文档 §5.1/§7）：`apps/api`（NestJS）+ `apps/web`（主题插件架构：`core/` + `signoz/` + `themes/legacy`）+ `packages/shared` + 单 Docker 镜像。`apps/web/src/vendor/`（100% 复刻路线产物）已删除，禁止重建；SigNoz 参考实现只读，不做逐字搬运。
+- SigNoz 参考实现是只读的：`~/develop/open-source/signoz @ v0.97.0`。禁止修改它，也禁止逐字搬运其前端到本仓库运行时；复用查询语义走 `third_party/signoz-0.97.0` 快照（可再造，不入库）对照实现。
 - 后端唯一 Upstream 由 env `SIGNOZ_BASE_URL` 固定（单后端，防 SSRF）。禁止在 URL 参数里接受后端地址。
 - 测试后端与验收 Dashboard 以设计文档冒烟表为准，`curl` 验证见设计文档附录 A。调试优先用 `GET /api/v1/dashboards/:id` + `SIGNOZ-API-KEY` 头验证连通性。
 
@@ -26,22 +26,25 @@
 ## 4. 命令与验证
 
 - 包管理 `pnpm@9`（根 `package.json` 锁定），Node `>=20`。首次：`pnpm install`。
-- 构建全部：`pnpm build`；单包：`pnpm build:api` / `pnpm build:shared`（`apps/web` 当前为 M1 占位构建）。
+- 构建全部：`pnpm build`（自动同步 `web/dist` → `api/web-dist`）；单包：`pnpm build:api` / `pnpm build:shared` / `pnpm build:web`。
 - 测试全部：`pnpm test`；API 单测：`pnpm test:api`；API e2e（含 mock 上游的代理矩阵）：`pnpm --filter @signoz-open-dashboard/api test:e2e`。
 - 类型检查：`pnpm typecheck`（或按包 `pnpm --filter <pkg> typecheck`）。
 - 本地启动 API：`SIGNOZ_BASE_URL=http://192.168.10.2:30303 SIGNOZ_API_KEY=<key> pnpm dev:api`（dev，watch），生产构建产物：`SIGNOZ_BASE_URL=... node apps/api/dist/main.js`。健康检查：`GET /healthz`，指标：`GET /metrics`。
 - 本地开发前端：`pnpm dev:web`（vite :5173，`/api/signoz` 代理到 `:8080`，需同时起 `dev:api`）；全量构建后自动同步 `apps/web/dist` → `apps/api/web-dist`（`scripts/sync-web-dist.js`，NestJS ServeStatic 挂载点）。
+- 注意：`apps/web` 正在 M5 重做中，`pnpm build:web` / `pnpm build` 预期失败（残留文件引用已删除的 `vendor/`），属正常现象，M5 落地后恢复；`pnpm build:api` / `pnpm test` 不受影响。
 - 真后端联调矩阵（dashboard GET / query_range 透传 / 写接口 403 / 错误码映射）见 `TODOS.md` M1 验收记录，探活用 `GET /api/signoz/api/v1/dashboards/:id` + `x-embed-api-key` 头。
 - SigNoz 参考仓库命令只用于查阅，不在此仓库执行构建（除 `git archive/show` 取快照、`curl` 探活）。
 - 文件操作用专用工具（`read/edit/write`），`bash` 仅用于 `git/curl/docker/pnpm` 等终端操作，不用 `cat/sed/awk/echo` 读写文件。
+- 用完 ego-browser 立即释放：每个 TaskSpace 用完就 `task.finish({keep: []})` 关闭，不堆积 space/page；本地 dev 服务（`:5173`/`:8080` 后台进程）验证完就杀掉；浏览器验证优先复用同一个 space（`goto` 而非开新 space），避免耗尽本机资源。
+- ego-browser 同时只允许存在 2 个 TaskSpace：每次使用前先 `listTaskSpaces()` 检查，超过 2 个就把旧的全部 `finish({keep: []})` 清掉再建新的。
 
 ## 5. 红线（agent 最易踩错）
 
 - 永不记录明文 API Key：日志、bug-track、TODOS、commit、文档新增内容中只允许 `effectiveKeySource/effectiveKeyHash(前8位）`，query 序列化前先脱敏 `apiKey/apikey/access_token`（大小写不敏感）。
 - 代理默认拒绝：除设计文档 §6.2 白名单（dashboards GET、v3/v4/v5 query_range、substitute_vars、v2 variables/query、version/features）外，其余 `/api/*` 一律 403，不透传写接口（dashboard PUT/POST/DELETE、`/lock`、rules/alerts/user/org）。
-- 前端 Key 只放内存（`EmbedAuthContext`），禁止写 `localStorage/cookie/URL 回写 env 默认 key`（`serializeEmbedParams` 规则见 §8）。
+- 前端 Key 只放内存，禁止写 `localStorage/cookie/URL 回写 env 默认 key`（`serializeEmbedParams` 规则见设计文档 §8）。
 - iframe 公开嵌入：`CSP frame-ancestors *`、`CORS *` 是有意为之，不要“顺手加固”为 DENY。
-- Node 锁定 `20 LTS`；`apps/web` 逐字搬运 SigNoz 0.97.0 渲染子树（见设计文档 §7，打包仍用 Vite），`antd` 精确 pin `5.11.0`，`uplot/@grafana/data/visx/react-query/redux` 与原生同版本；`echarts` 已移除（原生不用），不要引回。
+- Node 锁定 `20 LTS`；`apps/web` 为主题插件架构（见设计文档 §7）：禁止重建 `src/vendor`（逐字搬运路线已废弃）；新增主题只加 `themes/<name>/` + registry 一行，不改 `core/`；`legacy` 主题组件库见 §7.3，大版本锁定后不再升级。
 
 ## 6. Skills
 

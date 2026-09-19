@@ -19,10 +19,21 @@ function webDistPath(): string {
   return join(__dirname, '..', 'web-dist');
 }
 
+/**
+ * 环境文件：dev 模式（NODE_ENV=development）加载仓库根 `.env.development`，
+ * 其余加载根 `.env`；文件缺失则忽略，显式环境变量优先（dotenv 不覆盖已有值）。
+ * src/config 与 dist/config 到仓库根都是上三级，dev 与生产构建通用。
+ */
+function envFilePath(): string {
+  const file = process.env.NODE_ENV === 'development' ? '.env.development' : '.env';
+  return join(__dirname, '..', '..', '..', file);
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: envFilePath(),
       load: [signozConfig],
       validationSchema,
       validationOptions: { abortEarly: true, allowUnknown: true },
