@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { useColorMode } from '../../core/colorMode';
 import { widgetTitle } from '../../core/dashboard';
 import { toErrorProps } from '../../core/errors';
@@ -218,7 +218,7 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
           </Pie>
         </PieChart>
       </ChartContainer>
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center pb-[10%]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex h-[88%] items-center justify-center">
         <span className="text-xl font-bold text-zinc-950 dark:text-zinc-50">{formatValue(total, unit)}</span>
       </div>
       <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
@@ -234,36 +234,64 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
 }
 
 function SchnTable({ tables, unit, locale }: { tables: UiTable[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
+  const t = shadcnStrings(locale ?? 'zh');
   const t0 = tables[0];
-  if (!t0 || t0.columns.length === 0) return <SchnEmpty text={shadcnStrings(locale ?? 'zh').noData} />;
-  const rows = t0.rows.slice(0, 50);
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
+  if (!t0 || t0.columns.length === 0) return <SchnEmpty text={t.noData} />;
+  const maxPage = Math.max(1, Math.ceil(t0.rows.length / pageSize));
+  const safePage = Math.min(page, maxPage - 1);
+  const rows = t0.rows.slice(safePage * pageSize, safePage * pageSize + pageSize);
   return (
-    <div className="min-h-0 flex-1 overflow-auto rounded-md border border-zinc-200 dark:border-zinc-800">
-      <table className="w-full text-xs">
-        <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900">
-          <tr>
-            {t0.columns.map((c) => (
-              <th key={c.id} className="whitespace-nowrap px-2 py-1.5 text-left font-medium text-zinc-500 dark:text-zinc-400">
-                {c.name}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} className="border-t border-zinc-100 dark:border-zinc-900">
-              {t0.columns.map((c) => {
-                const v = r[c.id];
-                return (
-                  <td key={c.id} className="max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100">
-                    {typeof v === 'number' ? formatValue(v, unit) : String(v ?? '')}
-                  </td>
-                );
-              })}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-auto rounded-md border border-zinc-200 dark:border-zinc-800">
+        <table className="w-full text-xs">
+          <thead className="sticky top-0 bg-zinc-50 dark:bg-zinc-900">
+            <tr className="border-b border-zinc-200 dark:border-zinc-800">
+              {t0.columns.map((c) => (
+                <th key={c.id} className="whitespace-nowrap px-2 py-2 text-left align-middle font-medium text-zinc-500 dark:text-zinc-400">
+                  {c.name}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} className="border-b border-zinc-100 transition-colors last:border-0 hover:bg-zinc-50 dark:border-zinc-900 dark:hover:bg-zinc-900/60">
+                {t0.columns.map((c) => {
+                  const v = r[c.id];
+                  return (
+                    <td key={c.id} className="max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100">
+                      {typeof v === 'number' ? formatValue(v, unit) : String(v ?? '')}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {maxPage > 1 ? (
+        <div className="flex items-center justify-end gap-2 pt-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <span className="tabular-nums">
+            {safePage + 1} / {maxPage}
+          </span>
+          <button
+            className="rounded-md border border-zinc-200 px-2 py-0.5 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+            disabled={safePage === 0}
+            onClick={() => setPage(safePage - 1)}
+          >
+            {t.prevPage}
+          </button>
+          <button
+            className="rounded-md border border-zinc-200 px-2 py-0.5 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-800 dark:hover:bg-zinc-900"
+            disabled={safePage >= maxPage - 1}
+            onClick={() => setPage(safePage + 1)}
+          >
+            {t.nextPage}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
