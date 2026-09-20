@@ -390,15 +390,18 @@ Marketing site + usage docs for this project. Non-goals: it never talks to SigNo
   - `/design` — goals / non-goals, data flow, read-only-by-design and key-handling principles, theme plugin architecture, acceptance approach.
 - Showcase image: `docs/screenshots/demo.jpeg` is copied to `website/public/screenshots/demo.jpeg` and rendered in the landing showcase section (plain `<img>` with fixed dimensions, lazy loaded).
 - Favicon: `website/app/icon.png`, copied from `apps/web/public/images/zenlix-logo.png`, emitted through the vinext/Next metadata-file convention (`<link rel="icon">` per page).
-- Deploy: the static export is published to Cloudflare Workers as static assets by Wrangler. The Wrangler config lives at `website/deploy/wrangler.jsonc` with `assets.directory: ../dist/client`, deliberately **outside** the vinext project root: a root `wrangler.jsonc` makes `vinext build` require the `@cloudflare/vite-plugin` (server/RSC mode), which is unnecessary for a static export. Site text must not reference internal milestone wording such as "version 1".
+- SEO: every route is pre-rendered to static HTML at build time; page copy, one `h1` per page and per-route title/description/OpenGraph tags are in that HTML, so crawlers do not need to execute the client bundle. The default title is "Live SigNoz dashboards, embedded anywhere · signoz-open-dashboard"; canonical URLs, `og:image` and `sitemap.xml` are deferred until the production domain is fixed.
+- Deploy: the same static export is published to **both** Cloudflare targets — Workers static assets (`<worker>.workers.dev`) and a Pages project (`<project>.pages.dev`) — because `pages.dev` hostnames only exist for Pages projects. The Wrangler config lives at `website/deploy/wrangler.jsonc` with `assets.directory: ../dist/client`, deliberately **outside** the vinext project root: a root `wrangler.jsonc` makes `vinext build` require the `@cloudflare/vite-plugin` (server/RSC mode), which is unnecessary for a static export and breaks the Tailwind v4 CSS pipeline while conflicting with `output: "export"` (see bug-track 2026-09-20). Site text must not reference internal milestone wording such as "version 1".
 - Content source of truth stays `README.md` + this document; the site is a rendering of them, not a second spec.
 
 ### 9.3 CI: website build + Cloudflare Workers deploy (`.github/workflows/website-deploy.yml`)
 
 - Triggers: push to the default branch touching `website/**` or the workflow file, plus manual `workflow_dispatch`.
-- Steps: Node `22` + `pnpm@9.0.0`, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm build` (static export to `website/dist/client`), then `pnpm run deploy:workers` (`wrangler deploy --config deploy/wrangler.jsonc`).
-- Worker: `signoz-open-dashboard-website`, assets only, `not_found_handling: 404-page`; no bindings, no server code. Secrets required: `CLOUDFLARE_API_TOKEN` (Workers Scripts edit) and `CLOUDFLARE_ACCOUNT_ID`.
-- Dry run without Cloudflare credentials: `pnpm run deploy:workers:dry-run` validates the config and asset set locally.
+- Steps: Node `22` + `pnpm@9.0.0`, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm build` (static export to `website/dist/client`), then two deploys of the same output:
+  - `pnpm run deploy:workers` (`wrangler deploy --config deploy/wrangler.jsonc`) → Worker `signoz-open-dashboard-website`, assets only, `not_found_handling: 404-page`, served on `signoz-open-dashboard-website.<account>.workers.dev`.
+  - `pnpm run deploy:pages:create || true` then `pnpm run deploy:pages --branch=<ref>` (`wrangler pages deploy dist/client --project-name=signoz-open-dashboard-website`) → Pages project `signoz-open-dashboard-website`, production branch `main`, served on `signoz-open-dashboard-website.pages.dev`; non-main refs create preview deployments.
+- No bindings and no server code on either target. Secrets required: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. The token needs **Workers Scripts: Edit** and **Cloudflare Pages: Edit** permissions (the stock "Edit Cloudflare Workers" template does not include Pages).
+- Dry run without Cloudflare credentials: `pnpm run deploy:workers:dry-run` validates the Worker config and asset set locally; Pages deploys have no local dry-run mode.
 
 ---
 

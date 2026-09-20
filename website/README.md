@@ -34,21 +34,27 @@ pnpm start                  # serve the production build locally
 pnpm typecheck              # tsc --noEmit
 pnpm run deploy:workers     # wrangler deploy --config deploy/wrangler.jsonc
 pnpm run deploy:workers:dry-run
+pnpm run deploy:pages:create   # create the Pages project (idempotent in CI via `|| true`)
+pnpm run deploy:pages          # wrangler pages deploy dist/client --project-name=...
 ```
 
 The build is a static export (`next.config.ts` -> `output: "export"` + `trailingSlash: true`), so
 `dist/client` can be deployed to any static host (Cloudflare Workers/Pages, GitHub Pages, nginx).
 The site never talks to SigNoz, holds no key, and is not part of the deployed embed image.
 
-## Cloudflare Workers deployment
+## Cloudflare deployment (Workers + Pages)
 
-The static export is deployed as a Workers static-assets project:
+The same static export is deployed to two Cloudflare targets so both hostnames exist:
 
-- `deploy/wrangler.jsonc` — worker name `signoz-open-dashboard-website`, `assets.directory:
-  ../dist/client`, `not_found_handling: 404-page`.
-- `.github/workflows/website-deploy.yml` — on pushes to `main` touching `website/**`: install,
-  typecheck, build, then `pnpm run deploy:workers`. Requires the repository secrets
-  `CLOUDFLARE_API_TOKEN` (Workers Scripts edit) and `CLOUDFLARE_ACCOUNT_ID`.
+- **Workers** (`signoz-open-dashboard-website.<account>.workers.dev`) — `deploy/wrangler.jsonc`,
+  assets-only Worker with `assets.directory: ../dist/client` and `not_found_handling: 404-page`.
+- **Pages** (`signoz-open-dashboard-website.pages.dev`) — `wrangler pages deploy dist/client
+  --project-name=signoz-open-dashboard-website`, production branch `main`; deployments from other
+  refs become preview URLs.
+
+`.github/workflows/website-deploy.yml` runs on pushes to `main` touching `website/**`: install,
+typecheck, build, then both deploys. Required repository secrets: `CLOUDFLARE_API_TOKEN` (needs
+**Workers Scripts: Edit** and **Cloudflare Pages: Edit**) and `CLOUDFLARE_ACCOUNT_ID`.
 
 The wrangler config intentionally lives in `deploy/` rather than the project root: vinext treats a
 root `wrangler.jsonc` as a request for the Cloudflare RSC/Workers runtime and requires

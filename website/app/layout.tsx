@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "signoz-open-dashboard — embed live SigNoz dashboards anywhere",
+    default: "Live SigNoz dashboards, embedded anywhere · signoz-open-dashboard",
     template: "%s · signoz-open-dashboard",
   },
   description:
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "open source",
   ],
   openGraph: {
-    title: "signoz-open-dashboard",
+    title: "Live SigNoz dashboards, embedded anywhere",
     description:
       "Embed live SigNoz dashboards anywhere an iframe can go. Read-only by design, URL-driven, two themes.",
     type: "website",

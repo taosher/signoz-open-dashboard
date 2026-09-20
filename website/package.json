@@ -13,6 +13,8 @@
     "start": "vinext start",
     "deploy:workers": "wrangler deploy --config deploy/wrangler.jsonc",
     "deploy:workers:dry-run": "wrangler deploy --config deploy/wrangler.jsonc --dry-run",
+    "deploy:pages:create": "wrangler pages project create signoz-open-dashboard-website --production-branch=main",
+    "deploy:pages": "wrangler pages deploy dist/client --project-name=signoz-open-dashboard-website",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

@@ -22,4 +22,5 @@
 - [x] M9: `.github/workflows/docker-publish.yml` — buildx multi-arch image build + Docker Hub push on `v*` tags / manual dispatch (doc §9.1); YAML validated, image build/run verified locally (2026-09-20)
 - [x] M9: `website/` landing site — vinext + Tailwind v4 + Magic UI, routes `/` intro, `/docs` usage, `/design` principles; `pnpm typecheck` + static-export build green, desktop/mobile browser audit clean (2026-09-20, doc §9.2)
 - [x] M9: website Cloudflare Workers deploy — `deploy/wrangler.jsonc` static-assets config + `.github/workflows/website-deploy.yml` (build + `pnpm run deploy:workers`, secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`); dry-run validated locally (2026-09-20, doc §9.3)
+- [ ] M9: website Cloudflare Pages (`*.pages.dev`) deploy added to the same workflow (project create + `wrangler pages deploy`, token needs Pages: Edit); pending first CI run with real credentials to confirm the pages.dev hostname
 - [x] M9: website showcase image (`public/screenshots/demo.jpeg`) + copy cleanup (no "version 1" wording), browser verified (2026-09-20)

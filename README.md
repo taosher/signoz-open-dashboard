@@ -171,10 +171,12 @@ pnpm dev      # vinext dev server
 pnpm build    # static export -> website/dist/client (deploy to any static host)
 ```
 
-The `website-deploy` workflow builds it and publishes the static export to Cloudflare Workers
-(static assets) on pushes to `main` that touch `website/`; configure the `CLOUDFLARE_API_TOKEN`
-and `CLOUDFLARE_ACCOUNT_ID` repository secrets. Deploy locally with
-`pnpm run deploy:workers` (or validate with `pnpm run deploy:workers:dry-run`).
+The `website-deploy` workflow builds it and publishes the static export to Cloudflare on pushes to
+`main` that touch `website/`: Workers static assets (`signoz-open-dashboard-website.<account>.workers.dev`)
+and a Pages project (`signoz-open-dashboard-website.pages.dev`). Configure the
+`CLOUDFLARE_API_TOKEN` (Workers Scripts: Edit + Cloudflare Pages: Edit) and `CLOUDFLARE_ACCOUNT_ID`
+repository secrets. Deploy locally with `pnpm run deploy:workers` / `pnpm run deploy:pages` (or
+validate the Worker with `pnpm run deploy:workers:dry-run`).
 
 ## Development
 
