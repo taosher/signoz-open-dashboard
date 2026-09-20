@@ -113,7 +113,7 @@ export default function DesignPage() {
       </BlurFade>
 
       <div className="mt-14 space-y-12">
-        <Section id="goals" eyebrow="Goals" title="What version 1 must do">
+        <Section id="goals" eyebrow="Goals" title="What the product must do">
           <div className="grid gap-4 sm:grid-cols-2">
             <Card title="One-line embed">
               Any third-party site can embed a read-only dashboard with a single iframe URL. Callers
@@ -147,7 +147,7 @@ export default function DesignPage() {
             <li>No dynamic switching across multiple SigNoz backends: the single upstream is fixed by SIGNOZ_BASE_URL, which prevents SSRF.</li>
             <li>No domain allowlist. The embed is fully public: anyone holding the link can view.</li>
             <li>No dashboard editing, creation, deletion, locking or alert management.</li>
-            <li>No dashboard list, playlists or snapshot export in v1.</li>
+            <li>No dashboard list, playlists or snapshot export.</li>
           </ul>
           <p>
             Phase 1 chrome decision: hide alerts, hide the lock switch and show annotations read-only.

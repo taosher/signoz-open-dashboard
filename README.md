@@ -56,14 +56,14 @@ SIGNOZ_BASE_URL=http://<signoz-host>:30303 SIGNOZ_API_KEY=<key> docker compose u
 ```
 
 Published image (the `docker-publish` workflow builds linux/amd64 + linux/arm64 and pushes to
-`<DOCKERHUB_USERNAME>/signoz-open-dashboard` on `v*` tags and manual runs; set the
-`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` repository secrets once):
+`taosherio/signoz-open-dashboard` on `v*` tags and manual runs; set the `DOCKERHUB_TOKEN`
+repository secret once):
 
 ```bash
 docker run -p 8080:8080 \
   -e SIGNOZ_BASE_URL=http://<signoz-host>:30303 \
   -e SIGNOZ_API_KEY=<key> \
-  <DOCKERHUB_USERNAME>/signoz-open-dashboard:latest
+  taosherio/signoz-open-dashboard:latest
 ```
 
 Connectivity probe (against SigNoz directly):
@@ -170,6 +170,11 @@ pnpm install
 pnpm dev      # vinext dev server
 pnpm build    # static export -> website/dist/client (deploy to any static host)
 ```
+
+The `website-deploy` workflow builds it and publishes the static export to Cloudflare Workers
+(static assets) on pushes to `main` that touch `website/`; configure the `CLOUDFLARE_API_TOKEN`
+and `CLOUDFLARE_ACCOUNT_ID` repository secrets. Deploy locally with
+`pnpm run deploy:workers` (or validate with `pnpm run deploy:workers:dry-run`).
 
 ## Development
 

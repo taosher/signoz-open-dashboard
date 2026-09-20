@@ -16,23 +16,42 @@ This project is intentionally isolated from the repository root workspace:
 
 | Route     | Content                                                                              |
 | --------- | ------------------------------------------------------------------------------------ |
-| `/`       | Project intro, use cases, features, architecture, quick start teaser, FAQ, final CTA |
+| `/`       | Project intro, live dashboard showcase, use cases, features, architecture, FAQ        |
 | `/docs`   | Install, configuration, embed URL parameters, themes, proxy matrix, error codes       |
 | `/design` | Goals, non-goals, security model, theme plugin architecture, milestones, risks        |
+
+The showcase section renders `public/screenshots/demo.jpeg` (a copy of the repository's
+`docs/screenshots/demo.jpeg`).
 
 ## Commands
 
 ```bash
 pnpm install
-pnpm dev        # vinext dev server
-pnpm build      # static export -> dist/
-pnpm start      # serve the production build locally
-pnpm typecheck  # tsc --noEmit
+pnpm dev                    # vinext dev server
+pnpm build                  # static export -> dist/client
+pnpm start                  # serve the production build locally
+pnpm typecheck              # tsc --noEmit
+pnpm run deploy:workers     # wrangler deploy --config deploy/wrangler.jsonc
+pnpm run deploy:workers:dry-run
 ```
 
-The build is a static export (`next.config.ts` -> `output: "export"`), so `dist/` can be deployed
-to any static host (Cloudflare Pages, GitHub Pages, nginx, ...). The site never talks to SigNoz,
-holds no key, and is not part of the deployed embed image.
+The build is a static export (`next.config.ts` -> `output: "export"` + `trailingSlash: true`), so
+`dist/client` can be deployed to any static host (Cloudflare Workers/Pages, GitHub Pages, nginx).
+The site never talks to SigNoz, holds no key, and is not part of the deployed embed image.
+
+## Cloudflare Workers deployment
+
+The static export is deployed as a Workers static-assets project:
+
+- `deploy/wrangler.jsonc` — worker name `signoz-open-dashboard-website`, `assets.directory:
+  ../dist/client`, `not_found_handling: 404-page`.
+- `.github/workflows/website-deploy.yml` — on pushes to `main` touching `website/**`: install,
+  typecheck, build, then `pnpm run deploy:workers`. Requires the repository secrets
+  `CLOUDFLARE_API_TOKEN` (Workers Scripts edit) and `CLOUDFLARE_ACCOUNT_ID`.
+
+The wrangler config intentionally lives in `deploy/` rather than the project root: vinext treats a
+root `wrangler.jsonc` as a request for the Cloudflare RSC/Workers runtime and requires
+`@cloudflare/vite-plugin`, which a static export does not need.
 
 ## Adding Magic UI components
 

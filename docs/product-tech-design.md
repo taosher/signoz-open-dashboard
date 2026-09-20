@@ -366,13 +366,13 @@ the earlier raw `node_modules` copy is not runnable because pnpm links package d
 `apps/api/node_modules`. The web build is not optional: a failed frontend build fails the image
 instead of shipping a placeholder page.
 
-`compose` example: `embed: image: signoz-open-dashboard:0.97.0-embed.1; env: SIGNOZ_BASE_URL=http://192.168.10.2:30303, SIGNOZ_API_KEY=...; ports: 8080:8080`.
+`compose` example: `embed: image: taosherio/signoz-open-dashboard:0.97.0-embed.1; env: SIGNOZ_BASE_URL=http://192.168.10.2:30303, SIGNOZ_API_KEY=...; ports: 8080:8080`.
 
 ### 9.1 CI: Docker image publish to Docker Hub (`.github/workflows/docker-publish.yml`)
 
 - Triggers: push of a `v*` tag (release) and manual `workflow_dispatch` (`push` input, default true).
 - Build: `docker/build-push-action` with Buildx, platforms `linux/amd64,linux/arm64`, GHA layer cache, SBOM + provenance attestations.
-- Push target: `<DOCKERHUB_USERNAME>/signoz-open-dashboard`; namespace comes from the repo secret `DOCKERHUB_USERNAME`, credential from `DOCKERHUB_TOKEN` (Docker Hub access token, read/write). Tags come from `docker/metadata-action`: semver (`{{version}}`, `{{major}}.{{minor}}`, `{{major}}`), `sha-<short>`, and `latest` on `v*` tags or manual runs from the default branch.
+- Push target: `taosherio/signoz-open-dashboard` (fixed namespace); credential from the repo secret `DOCKERHUB_TOKEN` (Docker Hub access token, read/write). Tags come from `docker/metadata-action`: semver (`{{version}}`, `{{major}}.{{minor}}`, `{{major}}`), `sha-<short>`, and `latest` on `v*` tags or manual runs from the default branch.
 - The workflow contains no application secrets: `SIGNOZ_BASE_URL` / `SIGNOZ_API_KEY` are runtime env vars of the deployed container, never build inputs. No plaintext key may appear in workflow files or logs.
 - Verification without pushing: `act` / a local `docker build .` (manual dispatch with `push=false` is the supported dry run).
 
@@ -385,10 +385,19 @@ Marketing site + usage docs for this project. Non-goals: it never talks to SigNo
 - Toolchain: `website` needs Node `>=22` (vinext engine requirement); the embedding runtime keeps Node `>=20` and the Docker image never installs the site toolchain.
 - Isolation: nested `website/pnpm-workspace.yaml` (`packages: []`) makes the site its own pnpm project with its own lockfile; root `pnpm install/build/test/typecheck` and the `Dockerfile` are untouched.
 - Content (one route per concern, shared layout/header/footer):
-  - `/` — project intro, use cases, feature grid, architecture, quick-start teaser, FAQ.
+  - `/` — project intro, live dashboard showcase (screenshot), use cases, feature grid, architecture, quick-start teaser, FAQ.
   - `/docs` — install (Docker / Node), required env, embed URL parameter reference, backend proxy allowlist matrix, error codes, theming, security notes.
   - `/design` — goals / non-goals, data flow, read-only-by-design and key-handling principles, theme plugin architecture, acceptance approach.
+- Showcase image: `docs/screenshots/demo.jpeg` is copied to `website/public/screenshots/demo.jpeg` and rendered in the landing showcase section (plain `<img>` with fixed dimensions, lazy loaded).
+- Deploy: the static export is published to Cloudflare Workers as static assets by Wrangler. The Wrangler config lives at `website/deploy/wrangler.jsonc` with `assets.directory: ../dist/client`, deliberately **outside** the vinext project root: a root `wrangler.jsonc` makes `vinext build` require the `@cloudflare/vite-plugin` (server/RSC mode), which is unnecessary for a static export. Site text must not reference internal milestone wording such as "version 1".
 - Content source of truth stays `README.md` + this document; the site is a rendering of them, not a second spec.
+
+### 9.3 CI: website build + Cloudflare Workers deploy (`.github/workflows/website-deploy.yml`)
+
+- Triggers: push to the default branch touching `website/**` or the workflow file, plus manual `workflow_dispatch`.
+- Steps: Node `22` + `pnpm@9.0.0`, `pnpm install --frozen-lockfile`, `pnpm typecheck`, `pnpm build` (static export to `website/dist/client`), then `pnpm run deploy:workers` (`wrangler deploy --config deploy/wrangler.jsonc`).
+- Worker: `signoz-open-dashboard-website`, assets only, `not_found_handling: 404-page`; no bindings, no server code. Secrets required: `CLOUDFLARE_API_TOKEN` (Workers Scripts edit) and `CLOUDFLARE_ACCOUNT_ID`.
+- Dry run without Cloudflare credentials: `pnpm run deploy:workers:dry-run` validates the config and asset set locally.
 
 ---
 

@@ -247,7 +247,7 @@ export default function Home() {
                 <TypingAnimation>{`$ docker run -p 8080:8080 \\`}</TypingAnimation>
                 <TypingAnimation>{`    -e SIGNOZ_BASE_URL=http://signoz:30303 \\`}</TypingAnimation>
                 <TypingAnimation>{`    -e SIGNOZ_API_KEY=<read-only-key> \\`}</TypingAnimation>
-                <TypingAnimation>{`    your-org/signoz-open-dashboard:latest`}</TypingAnimation>
+                <TypingAnimation>{`    taosherio/signoz-open-dashboard:latest`}</TypingAnimation>
                 <AnimatedSpan className="text-emerald-400">
                   {`✔ listening on :8080`}
                 </AnimatedSpan>
@@ -283,6 +283,35 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section id="showcase" className="mx-auto w-full max-w-6xl px-6 pt-20">
+        <BlurFade inView>
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-card p-2 shadow-[0_0_120px_-50px_rgba(249,115,22,0.5)]">
+            <BorderBeam size={280} duration={12} />
+            <div className="flex items-center gap-2 px-3 py-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
+              <span className="h-2.5 w-2.5 rounded-full bg-yellow-500/80" />
+              <span className="h-2.5 w-2.5 rounded-full bg-green-500/80" />
+              <span className="ml-2 truncate font-mono text-xs text-muted-foreground">
+                embed.example.com/embed/&lt;dashboardId&gt;?relativeTime=30m&amp;theme=shadcn
+              </span>
+            </div>
+            <img
+              src="/screenshots/demo.jpeg"
+              alt="A live SigNoz dashboard embedded in a third-party page, with the embed toolbar above a grid of charts"
+              width={1920}
+              height={1080}
+              loading="lazy"
+              decoding="async"
+              className="w-full rounded-xl border border-white/5"
+            />
+          </div>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            A real dashboard served by the embed app: live charts, URL-driven controls, no console
+            login.
+          </p>
+        </BlurFade>
       </section>
 
       <section id="features" className="mx-auto w-full max-w-6xl px-6 py-20">

@@ -1,0 +1,9 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "signoz-open-dashboard-website",
+  "compatibility_date": "2026-09-20",
+  "assets": {
+    "directory": "../dist/client",
+    "not_found_handling": "404-page"
+  }
+}

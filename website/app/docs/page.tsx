@@ -134,7 +134,7 @@ export default function DocsPage() {
               code={`docker run -p 8080:8080 \\
   -e SIGNOZ_BASE_URL=http://<signoz-host>:30303 \\
   -e SIGNOZ_API_KEY=<read-only-key> \\
-  your-org/signoz-open-dashboard:latest
+  taosherio/signoz-open-dashboard:latest
 
 # 1. open a dashboard: http://localhost:8080/embed/<dashboardId>
 # 2. embed it:
