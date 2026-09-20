@@ -21,7 +21,8 @@ This project is intentionally isolated from the repository root workspace:
 | `/design` | Goals, non-goals, security model, theme plugin architecture, milestones, risks        |
 
 The showcase section renders `public/screenshots/demo.jpeg` (a copy of the repository's
-`docs/screenshots/demo.jpeg`).
+`docs/screenshots/demo.jpeg`). The favicon is `app/icon.png`, copied from
+`apps/web/public/images/zenlix-logo.png` and picked up by the metadata-file convention.
 
 ## Commands
 

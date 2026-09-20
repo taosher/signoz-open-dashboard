@@ -389,6 +389,7 @@ Marketing site + usage docs for this project. Non-goals: it never talks to SigNo
   - `/docs` — install (Docker / Node), required env, embed URL parameter reference, backend proxy allowlist matrix, error codes, theming, security notes.
   - `/design` — goals / non-goals, data flow, read-only-by-design and key-handling principles, theme plugin architecture, acceptance approach.
 - Showcase image: `docs/screenshots/demo.jpeg` is copied to `website/public/screenshots/demo.jpeg` and rendered in the landing showcase section (plain `<img>` with fixed dimensions, lazy loaded).
+- Favicon: `website/app/icon.png`, copied from `apps/web/public/images/zenlix-logo.png`, emitted through the vinext/Next metadata-file convention (`<link rel="icon">` per page).
 - Deploy: the static export is published to Cloudflare Workers as static assets by Wrangler. The Wrangler config lives at `website/deploy/wrangler.jsonc` with `assets.directory: ../dist/client`, deliberately **outside** the vinext project root: a root `wrangler.jsonc` makes `vinext build` require the `@cloudflare/vite-plugin` (server/RSC mode), which is unnecessary for a static export. Site text must not reference internal milestone wording such as "version 1".
 - Content source of truth stays `README.md` + this document; the site is a rendering of them, not a second spec.
 
