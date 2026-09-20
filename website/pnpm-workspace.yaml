@@ -1,0 +1,3 @@
+# Nested workspace root: keeps ./website isolated from the repo's root pnpm workspace.
+# Repo-root `pnpm install/build/test/typecheck` and the Docker image never touch this project.
+packages: []

@@ -8,7 +8,7 @@
 - [x] M0: review and freeze `docs/product-tech-design.md`
 - [x] M1: empty monorepo skeleton + NestJS `/api/signoz/*` passthrough + `/healthz` + `/metrics` (local dev/build/test all green)
 - [x] M1: `curl` proxy-matrix acceptance all green (integration against the real `v0.97.0` backend passed)
-- [ ] M1-deferred: single-image `Dockerfile` build verification (Dockerfile/compose written, not yet verified)
+- [x] M1-deferred: single-image `Dockerfile` build verification (2026-09-20: image builds the real web bundle; container verified with `/healthz` 200, `/embed/:id` 200, static asset 200, write POST 403; Dockerfile reworked to `pnpm deploy --prod` runtime + shared injection, see bug-track)
 - [x] M4-docs: design-doc rewrite (§4.1 theme=`legacy`, §5.1/§5.2, §7 theme plugin architecture, §11/§12/§13) + AGENTS/TODOS/bug-track/PATCHES sync
 - [x] M5: `apps/web` redo — `core/` (routing/auth/data-fetching/time-variables/replaceState/empty-state mapping) + `signoz/` (query semantics) + `themes/registry + legacy` (full panel coverage, `?theme=` unknown-value fallback); smoke-dashboard browser rendering acceptance (2026-09-19: all 4 panels rendered, wrong-key 401 / wrong-ID 404 / unknown-theme fallback all passed, see the bug-track groupBy mapping pitfall)
 - [x] M5: clean up `apps/web` leftovers (`src/embed/*`, `src/shims/`, unused deps in `package.json`) and restore `pnpm build` / `pnpm test` to green (2026-09-19: `pnpm build/test/typecheck` + API e2e 7/7 all green)
@@ -19,3 +19,5 @@
 - [x] M8: shadcn theme creation (`?theme=shadcn`: tailwind + Recharts + lucide; Tokens/Toolbar/WidgetCard/ErrorState quartet; four-dashboard dual-theme regression passed) (2026-09-19)
 - [ ] M8: shadcn theme polish (work through the pixel-diff convergence items against the console one by one, see the visual-polish rows in bug-track)
 - [ ] M7: four-dashboard regression (SWR no-flash switch verification, polling-advance verification, offline-retry verification) + bundle-size confirmation (devtools excluded from the bundle) (2026-09-19 progress: four-dashboard dual-theme DOM/screenshot regression passed, no-flash verified; offline retry still to be drilled; bundle 2.59MB / 825KB-gzip, see bug-track)
+- [x] M9: `.github/workflows/docker-publish.yml` — buildx multi-arch image build + Docker Hub push on `v*` tags / manual dispatch (doc §9.1); YAML validated, image build/run verified locally (2026-09-20)
+- [x] M9: `website/` landing site — vinext + Tailwind v4 + Magic UI, routes `/` intro, `/docs` usage, `/design` principles; `pnpm typecheck` + static-export build green, desktop/mobile browser audit clean (2026-09-20, doc §9.2)

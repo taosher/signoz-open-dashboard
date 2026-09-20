@@ -55,6 +55,17 @@ SIGNOZ_BASE_URL=http://<signoz-host>:30303 SIGNOZ_API_KEY=<key> docker compose u
 # serves on :8080
 ```
 
+Published image (the `docker-publish` workflow builds linux/amd64 + linux/arm64 and pushes to
+`<DOCKERHUB_USERNAME>/signoz-open-dashboard` on `v*` tags and manual runs; set the
+`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` repository secrets once):
+
+```bash
+docker run -p 8080:8080 \
+  -e SIGNOZ_BASE_URL=http://<signoz-host>:30303 \
+  -e SIGNOZ_API_KEY=<key> \
+  <DOCKERHUB_USERNAME>/signoz-open-dashboard:latest
+```
+
 Connectivity probe (against SigNoz directly):
 
 ```bash
@@ -145,6 +156,20 @@ Third-party site (portal, product, NOC wall, report)
 ```
 
 Browser loads static HTML → web parses the URL into a memory-only auth context (never `localStorage`/cookie) → all data calls go to same-origin `/api/signoz/...` with `x-embed-api-key` → NestJS injects `SIGNOZ-API-KEY` and streams the upstream response back.
+
+## Website
+
+`website/` is the project landing site and usage documentation (`/` intro, `/docs`, `/design`),
+built with [vinext](https://github.com/cloudflare/vinext) + Tailwind CSS v4 + Magic UI. It is an
+isolated pnpm project (own `pnpm-workspace.yaml` + lockfile, Node `>=22`) so the embedding runtime
+and its Docker image stay untouched.
+
+```bash
+cd website
+pnpm install
+pnpm dev      # vinext dev server
+pnpm build    # static export -> website/dist/client (deploy to any static host)
+```
 
 ## Development
 

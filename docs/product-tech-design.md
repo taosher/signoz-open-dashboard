@@ -178,9 +178,17 @@ signoz-open-dashboard/
   packages/shared/
     embedParams.ts  # parse/serialize/validate
     errors.ts       # EMBED_xxx error codes
+  website/  # marketing site + docs (isolated pnpm project, vinext + Magic UI, see §9.2)
+    app/  # / (intro), /docs (usage), /design (principles)
+    pnpm-workspace.yaml  # nested workspace root: website is NOT part of the root workspace
+  .github/workflows/docker-publish.yml  # image build + Docker Hub push (see §9.1)
   Dockerfile  # multi-stage single image
   docker-compose.yml
 ```
+
+`website/` is intentionally isolated from the root pnpm workspace (`pnpm-workspace.yaml`
+matches only `apps/*` and `packages/*`), so the embedding runtime's install/build/test gates
+are unaffected and the single Docker image never contains the marketing site.
 
 Node: `20 LTS` (compatible with SigNoz `engines >=16.15`, pinned to 20).
 
@@ -335,23 +343,52 @@ interface ThemeModule {
 
 ## 9. Deployment and Runtime
 
-Docker (single image):
+Docker (single image; verified 2026-09-20: `/healthz` 200, `/embed/:id` 200, asset 200, write 403):
 
 ```dockerfile
-FROM node:20 AS webbuild
-WORKDIR /app/apps/web
-COPY ... && yarn && yarn build
-FROM node:20 AS apibuild
-WORKDIR /app/apps/api
-COPY ... && pnpm i && pnpm build
-FROM node:20-slim
+FROM node:20-slim AS webbuild
+# COPY package.json pnpm-workspace.yaml pnpm-lock.yaml tsconfig.base.json + all workspace manifests
+# pnpm install --frozen-lockfile --filter @signoz-open-dashboard/web...
+# COPY packages/shared + apps/web; pnpm --filter @signoz-open-dashboard/web build (no placeholder fallback)
+FROM node:20-slim AS apibuild
+# same manifest/lockfile install for @signoz-open-dashboard/api...
+# build packages/shared, then apps/api; pnpm --filter @signoz-open-dashboard/api deploy --prod /out
+# inject the workspace dependency: /out/node_modules/@signoz-open-dashboard/shared
+FROM node:20-slim AS runtime
 ENV NODE_ENV=production PORT=8080
-COPY --from=apibuild /app/apps/api/dist ./dist
+COPY --from=apibuild /out ./
 COPY --from=webbuild /app/apps/web/dist ./web-dist
 CMD ["node","dist/main.js"]
 ```
 
+The runtime directory is produced by `pnpm deploy --prod` (self-contained production `node_modules`);
+the earlier raw `node_modules` copy is not runnable because pnpm links package dependencies in
+`apps/api/node_modules`. The web build is not optional: a failed frontend build fails the image
+instead of shipping a placeholder page.
+
 `compose` example: `embed: image: signoz-open-dashboard:0.97.0-embed.1; env: SIGNOZ_BASE_URL=http://192.168.10.2:30303, SIGNOZ_API_KEY=...; ports: 8080:8080`.
+
+### 9.1 CI: Docker image publish to Docker Hub (`.github/workflows/docker-publish.yml`)
+
+- Triggers: push of a `v*` tag (release) and manual `workflow_dispatch` (`push` input, default true).
+- Build: `docker/build-push-action` with Buildx, platforms `linux/amd64,linux/arm64`, GHA layer cache, SBOM + provenance attestations.
+- Push target: `<DOCKERHUB_USERNAME>/signoz-open-dashboard`; namespace comes from the repo secret `DOCKERHUB_USERNAME`, credential from `DOCKERHUB_TOKEN` (Docker Hub access token, read/write). Tags come from `docker/metadata-action`: semver (`{{version}}`, `{{major}}.{{minor}}`, `{{major}}`), `sha-<short>`, and `latest` on `v*` tags or manual runs from the default branch.
+- The workflow contains no application secrets: `SIGNOZ_BASE_URL` / `SIGNOZ_API_KEY` are runtime env vars of the deployed container, never build inputs. No plaintext key may appear in workflow files or logs.
+- Verification without pushing: `act` / a local `docker build .` (manual dispatch with `push=false` is the supported dry run).
+
+### 9.2 Website (`./website`)
+
+Marketing site + usage docs for this project. Non-goals: it never talks to SigNoz, holds no key, and is not part of the deployed embed image.
+
+- Stack: **vinext** (Vite-based reimplementation of the Next.js API surface, App Router + RSC) + React 19 + Tailwind CSS v4 + **Magic UI** components (`motion` based).
+- Build: static export (`next.config.ts` -> `output: "export"` + `trailingSlash: true`), output `website/dist/client` with one `index.html` per route directory, deployable to any static host (Cloudflare Pages / GitHub Pages / nginx). No server runtime; `pnpm dev` for local development.
+- Toolchain: `website` needs Node `>=22` (vinext engine requirement); the embedding runtime keeps Node `>=20` and the Docker image never installs the site toolchain.
+- Isolation: nested `website/pnpm-workspace.yaml` (`packages: []`) makes the site its own pnpm project with its own lockfile; root `pnpm install/build/test/typecheck` and the `Dockerfile` are untouched.
+- Content (one route per concern, shared layout/header/footer):
+  - `/` — project intro, use cases, feature grid, architecture, quick-start teaser, FAQ.
+  - `/docs` — install (Docker / Node), required env, embed URL parameter reference, backend proxy allowlist matrix, error codes, theming, security notes.
+  - `/design` — goals / non-goals, data flow, read-only-by-design and key-handling principles, theme plugin architecture, acceptance approach.
+- Content source of truth stays `README.md` + this document; the site is a rendering of them, not a second spec.
 
 ---
 
@@ -390,6 +427,7 @@ Note: pixel-level screenshot diffing against the console is no longer done (dire
 - M1 (done): monorepo + NestJS passthrough + `/healthz` + `/metrics` + curl matrix all green.
 - M5 (frontend redo): `core/` (routing/auth/data-fetching/time-variables/replaceState/empty-state mapping) + `signoz/` (query semantics) + `themes/legacy` (default theme with full panels) + registry fallback; smoke-dashboard render acceptance.
 - M6: iframe-resizer, Chrome108, offline drill, second dashboard (variables+table), docs wrap-up.
+- M9: distribution and docs site — GitHub Actions Docker Hub publish (§9.1) + vinext/Magic UI website at `website/` with intro/docs/design routes (§9.2).
 - Archived (no longer executed): old M2–M4 plan (first self-built UI attempt verified then discarded), 100% replica route (vendor deleted, see the bug-track decision record).
 
 ## 13. Risks
@@ -397,6 +435,7 @@ Note: pixel-level screenshot diffing against the console is no longer done (dire
 - Full-permission keys + public iframes invite abuse → doc warnings + throttle + refresh floor.
 - Theme sprawl: a new theme may only add `themes/<name>/` + one registry line; core must not be touched; when theme branches appear in core, refactor back to the contract.
 - `iframe-resizer` vs React18 StrictMode/antd overlay height jitter → use `lowestElement` + debounce.
+- Website toolchain risk: vinext is pre-1.0; pinned via `website/pnpm-lock.yaml`, isolated from the embedding runtime, so a site breakage can never break the shipped image.
 
 ---
 
