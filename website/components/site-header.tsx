@@ -12,11 +12,6 @@ export function SiteHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
         <a href="/" className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-end justify-center gap-[3px] rounded-md bg-primary/15 p-1.5 ring-1 ring-primary/40">
-            <span className="h-2 w-1 rounded-sm bg-primary" />
-            <span className="h-3.5 w-1 rounded-sm bg-primary" />
-            <span className="h-2.5 w-1 rounded-sm bg-primary" />
-          </span>
           <span className="text-sm font-semibold tracking-tight sm:text-base">
             signoz-open-dashboard
           </span>

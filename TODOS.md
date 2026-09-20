@@ -24,3 +24,5 @@
 - [x] M9: website Cloudflare Workers deploy — `deploy/wrangler.jsonc` static-assets config + `.github/workflows/website-deploy.yml` (build + `pnpm run deploy:workers`, secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID`); dry-run validated locally (2026-09-20, doc §9.3)
 - [ ] M9: website Cloudflare Pages (`*.pages.dev`) deploy added to the same workflow (check-then-create + `wrangler pages deploy`, token needs Pages: Edit); first CI run failed with "project does not exist" because the create step was masked by `|| true`; awaiting a green run after the token gets Pages: Edit
 - [x] M9: website showcase image (`public/screenshots/demo.jpeg`) + copy cleanup (no "version 1" wording), browser verified (2026-09-20)
+- [x] M9: website code blocks syntax-highlighted at build time with Shiki (vesper, html/bash/text/json), no highlighter JS in the client bundle; hero/docs verified in browser (2026-09-20)
+- [x] M9: embed page core reset (`apps/web/src/core/reset.css`, UA body margin removed; verified computed `body{margin:0}` in the built embed page) + MIT `LICENSE` and `license` fields in all package.json files (2026-09-20)

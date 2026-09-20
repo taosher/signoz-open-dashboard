@@ -1,0 +1,25 @@
+/**
+ * Core reset (design doc §7.4-9): imported by main.tsx before any theme styles.
+ * Deliberately minimal and theme-agnostic: only UA artifacts that leak into every theme
+ * are removed. Tailwind preflight stays disabled (legacy keeps its baselines), so do not
+ * add a universal `box-sizing`/element reset here.
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#embed-root {
+  min-height: 100vh;
+}

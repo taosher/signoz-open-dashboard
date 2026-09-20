@@ -1,6 +1,7 @@
 {
   "name": "@signoz-open-dashboard/shared",
   "version": "1.0.0",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

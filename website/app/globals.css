@@ -184,3 +184,18 @@
     linear-gradient(to bottom, oklch(1 0 0 / 4%) 1px, transparent 1px);
   background-size: 3rem 3rem;
 }
+
+.code-block .shiki {
+  margin: 0;
+  overflow-x: auto;
+  background-color: transparent !important;
+  font-family: var(--font-mono);
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.code-block .shiki code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}

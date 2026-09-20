@@ -320,6 +320,7 @@ interface ThemeModule {
 6. **Read-only grid**: not draggable; `?annotations=` reserved.
 7. **iframe-resizer child**: wired once in core.
 8. **Error pages**: core maps per the §6.4 codes; themes only handle stylistic expression.
+9. **Global reset**: core imports a minimal, theme-agnostic reset (`core/reset.css`) before any theme styles — UA `html/body` margin/padding removed, `#embed-root` min-height, text-size-adjust — so the embed fills the iframe without the browser's default body margin. Tailwind preflight stays disabled (§7.6) and a universal `box-sizing`/element reset must not be added globally, because the legacy theme keeps its own baselines.
 
 ### 7.5 Upgrade Strategy (pin the 0.97.0 APIs, do not follow frontend versions)
 
@@ -391,6 +392,7 @@ Marketing site + usage docs for this project. Non-goals: it never talks to SigNo
 - Showcase image: `docs/screenshots/demo.jpeg` is copied to `website/public/screenshots/demo.jpeg` and rendered in the landing showcase section (plain `<img>` with fixed dimensions, lazy loaded).
 - Favicon: `website/app/icon.png`, copied from `apps/web/public/images/zenlix-logo.png`, emitted through the vinext/Next metadata-file convention (`<link rel="icon">` per page).
 - SEO: every route is pre-rendered to static HTML at build time; page copy, one `h1` per page and per-route title/description/OpenGraph tags are in that HTML, so crawlers do not need to execute the client bundle. The default title is "Live SigNoz dashboards, embedded anywhere · signoz-open-dashboard"; canonical URLs, `og:image` and `sitemap.xml` are deferred until the production domain is fixed.
+- Code samples: highlighted at build time with Shiki (`vesper` theme, html/bash/text/json) inside the server-rendered `CodeBlock`; the generated markup ships as plain HTML/CSS with no highlighter JavaScript in the client bundle.
 - Deploy: the same static export is published to **both** Cloudflare targets — Workers static assets (`<worker>.workers.dev`) and a Pages project (`<project>.pages.dev`) — because `pages.dev` hostnames only exist for Pages projects. The Wrangler config lives at `website/deploy/wrangler.jsonc` with `assets.directory: ../dist/client`, deliberately **outside** the vinext project root: a root `wrangler.jsonc` makes `vinext build` require the `@cloudflare/vite-plugin` (server/RSC mode), which is unnecessary for a static export and breaks the Tailwind v4 CSS pipeline while conflicting with `output: "export"` (see bug-track 2026-09-20). Site text must not reference internal milestone wording such as "version 1".
 - Content source of truth stays `README.md` + this document; the site is a rendering of them, not a second spec.
 

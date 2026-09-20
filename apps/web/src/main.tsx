@@ -3,6 +3,7 @@
  * native params → replaceState → pick theme from registry → mount core App.
  * Key lives only in memory (EmbedAuthProvider), never in localStorage/cookie.
  */
+import './core/reset.css';
 import { isValidDashboardId, parseEmbedParams } from '@signoz-open-dashboard/shared';
 import React from 'react';
 import { createRoot } from 'react-dom/client';

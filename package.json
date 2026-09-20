@@ -2,6 +2,7 @@
   "name": "signoz-open-dashboard",
   "private": true,
   "version": "1.0.0",
+  "license": "MIT",
   "description": "Embed SigNoz 0.97.0 dashboards via iframe (NestJS proxy + vendored React frontend)",
   "packageManager": "pnpm@9.0.0",
   "engines": {

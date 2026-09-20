@@ -2,6 +2,7 @@
   "name": "@signoz-open-dashboard/api",
   "version": "1.0.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "build": "nest build",
     "start": "node dist/main.js",

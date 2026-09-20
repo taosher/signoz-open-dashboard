@@ -193,3 +193,7 @@ Layout: `apps/api` (NestJS proxy + static hosting + health/metrics) · `apps/web
 
 > [!WARNING]
 > URL keys end up in browser history, proxy logs, and referers. Use short-lived, read-only keys and rotate on leak. The single upstream is fixed by `SIGNOZ_BASE_URL`; dynamic backends are out of scope.
+
+## License
+
+MIT. See [LICENSE](LICENSE). SigNoz is a trademark of its respective owner; this project is independent and not affiliated with SigNoz, Inc.
