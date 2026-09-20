@@ -52,7 +52,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Ensure Cloudflare Pages project
-        run: pnpm run deploy:pages:create || true
+        run: |
+          if pnpm exec wrangler pages project list --json | grep -q "signoz-open-dashboard-website"; then
+            echo "Pages project signoz-open-dashboard-website already exists"
+          else
+            pnpm run deploy:pages:create
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

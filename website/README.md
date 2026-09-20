@@ -34,7 +34,7 @@ pnpm start                  # serve the production build locally
 pnpm typecheck              # tsc --noEmit
 pnpm run deploy:workers     # wrangler deploy --config deploy/wrangler.jsonc
 pnpm run deploy:workers:dry-run
-pnpm run deploy:pages:create   # create the Pages project (idempotent in CI via `|| true`)
+pnpm run deploy:pages:create   # create the Pages project (CI checks first, then creates only if missing)
 pnpm run deploy:pages          # wrangler pages deploy dist/client --project-name=...
 ```
 
