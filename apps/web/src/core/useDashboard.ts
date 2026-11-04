@@ -29,7 +29,7 @@ export function useDashboard(): DashboardState {
     abortRef.current = ctrl;
     setLoading(true);
     setError(null);
-    apiFetch<unknown>(`/api/v1/dashboards/${encodeURIComponent(dashboardId)}`, {
+    apiFetch<unknown>(`/api/v2/dashboards/${encodeURIComponent(dashboardId)}`, {
       signal: ctrl.signal,
       apiKey,
     })

@@ -26,7 +26,7 @@ export function mapUpstreamError(
   }
   if (
     upstreamStatus === 404 &&
-    upstreamPath.startsWith('/api/v1/dashboards/')
+    (upstreamPath.startsWith('/api/v1/dashboards/') || upstreamPath.startsWith('/api/v2/dashboards/'))
   ) {
     return new HttpException(
       {
