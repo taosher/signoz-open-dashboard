@@ -5,6 +5,7 @@
  */
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
+@plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:where(.schn-dark, .schn-dark *));
 
@@ -21,8 +22,22 @@
 /* No preflight (keeps legacy intact), so native control baselines are patched here.
  * NOTE: never use the `font: inherit` shorthand — unlayered styles override tailwind text-xs;
  * only patch the conflict-free font-family from preflight. */
+.schn-markdown {
+  padding: 1rem;
+}
+
+.schn-markdown :where(pre) {
+  overflow-x: auto;
+}
+
 .schn button {
   font-family: inherit;
+}
+
+/* No preflight means the UA `h1–h6 { margin-block: 0.83em }` baseline survives; reset only the
+ * margin (never font-size/weight — this file is unlayered and would beat the tailwind utilities). */
+.schn :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
 }
 
 /* Slim scrollbars for radix dropdown/popover lists (shadcn look; table bodies use the ScrollArea primitive) */

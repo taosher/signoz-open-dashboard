@@ -330,6 +330,7 @@ interface ThemeModule {
 ### 7.6 shadcn Theme (default, `?theme=shadcn`)
 
 - Component library: tailwind (preflight off, does not pollute legacy) + Recharts (against `ui.shadcn chart`: ChartContainer composition + CSS-variable palette) + Base UI primitives (Select/Popover/ToggleGroup/Checkbox, same family as the charts) + lucide icons;
+- `signoz/TextPanel` renders its `spec.text` as sanitized Markdown in the shadcn theme. Markdown links are restricted to safe web protocols, and raw HTML is not rendered.
 - Data fetching / variables / legend / unit semantics share `core/` + `signoz/` with legacy; only the render layer differs; color scheme likewise comes from the core context (`.schn-dark` class variant).
 
 ---
