@@ -53,8 +53,6 @@ export interface WidgetProps {
   refreshing?: boolean;
   /** Locale (empty-state/subtle-hint copy follows it; defaults to zh). */
   locale?: EmbedLocale;
-  /** Current dashboard variable values (name → value); drill-down links resolve `{{var}}` from these. */
-  variables?: Record<string, unknown>;
   /**
    * Click-to-drill-down sink. The card renders native click semantics (query name, signal,
    * group-by equality filters, clicked bucket window) and hands the payload out; what happens

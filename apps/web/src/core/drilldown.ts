@@ -52,9 +52,7 @@ export interface DrilldownClickPayload {
  * express "whatever the user clicked" through variables alone.
  */
 export function focusExpression(filters: FilterData[]): string {
-  return filters
-    .map((filter) => `${filter.filterKey} = '${String(filter.filterValue).replace(/'/g, "\\'")}'`)
-    .join(' AND ');
+  return filters.map((filter) => `${filter.filterKey} = ${quoteIdent(filter.filterValue)}`).join(' AND ');
 }
 
 /** Fallback step (seconds) when the response carries no per-query step interval. */
@@ -124,15 +122,10 @@ export function chartClickTimeRange(params: {
   return stepClickTimeRange(step, params.clickedTimestamp, apm);
 }
 
-/** Per-query metadata the click resolvers need (signal, group-by, step, first metric name). */
-export interface QueryMeta {
-  name: string;
-  signal?: string;
-  groupBy?: string[];
-  /** Per-query step interval in seconds. */
-  step?: number;
-  metricName?: string;
-}
+/** Per-query metadata the click resolvers need; owned by the response parser that produces it. */
+import type { QueryMeta } from '../signoz/v5Response';
+import { quoteIdent } from './variables';
+export type { QueryMeta };
 
 export interface ClickPoint {
   x: number;
@@ -316,7 +309,7 @@ export function resolveTemplate(text: string, context: Record<string, string>): 
 export function isSafeLinkUrl(url: string): boolean {
   const trimmed = url.trim();
   if (trimmed === '') return false;
-  if (trimmed.startsWith('/')) return true;
+  if (trimmed.startsWith('/') && !trimmed.startsWith('//')) return true;
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';

@@ -17,10 +17,10 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import DOMPurify from 'dompurify';
-import { marked } from 'marked';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { useColorMode } from '../../core/colorMode';
+import { renderMarkdown } from '../../core/markdown';
+import { shortTime } from '../../signoz/formatTime';
 import { widgetTitle } from '../../core/dashboard';
 import {
   chartClickContext,
@@ -48,26 +48,13 @@ import { shadcnStrings } from './locale';
 import { SchnCard, SchnEmpty, SchnScrollArea, SchnSkeleton } from './ui';
 
 function MarkdownText({ value }: { value: string }): JSX.Element {
-  const html = useMemo(() => {
-    const rendered = marked.parse(value, { async: false, gfm: true, breaks: true });
-    const source = typeof rendered === 'string' ? rendered : '';
-    return DOMPurify.sanitize(source, {
-      ALLOWED_ATTR: ['href', 'target', 'rel'],
-      ALLOWED_URI_REGEXP: /^https?:\/\//i,
-    });
-  }, [value]);
+  const html = useMemo(() => renderMarkdown(value), [value]);
   return (
     <div
       className="schn-markdown prose prose-zinc max-w-none dark:prose-invert"
       dangerouslySetInnerHTML={{ __html: html }}
     />
   );
-}
-
-function shortTime(ms: number): string {
-  const d = new Date(ms);
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function fullTime(ms: number): string {
@@ -103,6 +90,37 @@ function toRows(series: UiSeries[], colors: string[]): RowSeries {
   return { keys, rows, config };
 }
 
+/** Native `enrichChartClick` for time-series and bar renderers: clicked series + clicked bucket. */
+function useChartClick(params: {
+  series: UiSeries[];
+  colors: string[];
+  queries: QueryMeta[];
+  onPointClick?: (payload: DrilldownClickPayload) => void;
+}): (state: { activeDataKey?: unknown; activeLabel?: unknown }, event: React.MouseEvent<SVGGraphicsElement>) => void {
+  const { series, colors, queries, onPointClick } = params;
+  return useCallback(
+    (state, event) => {
+      if (!onPointClick || state.activeDataKey === undefined) return;
+      const index = Number(String(state.activeDataKey).replace(/^s/, ''));
+      const clicked = series[index];
+      if (!clicked || clicked.points.length === 0) return;
+      const bucketMs = Number(state.activeLabel);
+      const bucket = Number.isFinite(bucketMs) ? bucketMs : clicked.points[clicked.points.length - 1].t;
+      const payload = chartClickContext({
+        point: { x: event.clientX, y: event.clientY },
+        queryName: clicked.queryName,
+        labels: clicked.labels,
+        legend: clicked.legend,
+        color: colors[index % colors.length],
+        timestamp: Math.floor(bucket / 1000),
+        queries,
+      });
+      if (payload) onPointClick(payload);
+    },
+    [onPointClick, series, colors, queries],
+  );
+}
+
 function SchnTimeSeries(props: {
   series: UiSeries[];
   unit?: string;
@@ -119,29 +137,7 @@ function SchnTimeSeries(props: {
   const tick = dark ? '#a1a1aa' : '#71717a';
 
   // Native `enrichChartClick`: resolve the clicked series (dataKey → series) plus its bucket.
-  const handleClick = useCallback(
-    (state: { activeDataKey?: unknown; activeLabel?: unknown }, event: React.MouseEvent<SVGGraphicsElement>) => {
-      if (!onPointClick || state.activeDataKey === undefined) return;
-      const index = Number(String(state.activeDataKey).replace(/^s/, ''));
-      const clicked = series[index];
-      if (!clicked || clicked.points.length === 0) return;
-      const bucketMs = Number(state.activeLabel);
-      const bucket = Number.isFinite(bucketMs)
-        ? bucketMs
-        : clicked.points[clicked.points.length - 1].t;
-      const payload = chartClickContext({
-        point: { x: event.clientX, y: event.clientY },
-        queryName: clicked.queryName,
-        labels: clicked.labels,
-        legend: clicked.legend,
-        color: colors[index % colors.length],
-        timestamp: Math.floor(bucket / 1000),
-        queries,
-      });
-      if (payload) onPointClick(payload);
-    },
-    [onPointClick, series, colors, queries],
-  );
+  const handleClick = useChartClick({ series, colors, queries, onPointClick });
 
   if (rows.length === 0) return <SchnEmpty text={shadcnStrings(locale ?? 'zh').noData} />;
   return (
@@ -213,29 +209,7 @@ function SchnBars(props: {
   const tick = dark ? '#a1a1aa' : '#71717a';
 
   // Bars share the time-series click semantics (clicked series + clicked bucket ± step).
-  const handleClick = useCallback(
-    (state: { activeDataKey?: unknown; activeLabel?: unknown }, event: React.MouseEvent<SVGGraphicsElement>) => {
-      if (!onPointClick || state.activeDataKey === undefined) return;
-      const index = Number(String(state.activeDataKey).replace(/^s/, ''));
-      const clicked = series[index];
-      if (!clicked || clicked.points.length === 0) return;
-      const bucketMs = Number(state.activeLabel);
-      const bucket = Number.isFinite(bucketMs)
-        ? bucketMs
-        : clicked.points[clicked.points.length - 1].t;
-      const payload = chartClickContext({
-        point: { x: event.clientX, y: event.clientY },
-        queryName: clicked.queryName,
-        labels: clicked.labels,
-        legend: clicked.legend,
-        color: colors[index % colors.length],
-        timestamp: Math.floor(bucket / 1000),
-        queries,
-      });
-      if (payload) onPointClick(payload);
-    },
-    [onPointClick, series, colors, queries],
-  );
+  const handleClick = useChartClick({ series, colors, queries, onPointClick });
 
   if (rows.length === 0) return <SchnEmpty text={shadcnStrings(locale ?? 'zh').noData} />;
   return (

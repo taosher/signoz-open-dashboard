@@ -4,13 +4,12 @@
  * Charts use an echarts-based custom implementation; visual closeness is enough (design doc §7.3).
  */
 import { Card, Empty, Spin, Statistic, Table } from 'antd';
-import DOMPurify from 'dompurify';
 import * as echarts from 'echarts';
-import { marked } from 'marked';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EmbedLocale } from '@signoz-open-dashboard/shared';
 import { chartForeground, useColorMode } from '../../core/colorMode';
 import { toErrorProps } from '../../core/errors';
+import { renderMarkdown } from '../../core/markdown';
 import { widgetTitle } from '../../core/dashboard';
 import { formatValue } from '../../signoz/format';
 import type { UiSeries, UiTable } from '../../signoz/v5Response';
@@ -90,14 +89,7 @@ function escapeHtml(s: string): string {
 }
 
 function LegacyMarkdown({ value }: { value: string }): JSX.Element {
-  const html = useMemo(() => {
-    const rendered = marked.parse(value, { async: false, gfm: true, breaks: true });
-    const source = typeof rendered === 'string' ? rendered : '';
-    return DOMPurify.sanitize(source, {
-      ALLOWED_ATTR: ['href', 'target', 'rel'],
-      ALLOWED_URI_REGEXP: /^https?:\/\//i,
-    });
-  }, [value]);
+  const html = useMemo(() => renderMarkdown(value), [value]);
   return (
     <div
       className="legacy-markdown"

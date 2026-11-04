@@ -33,11 +33,6 @@ export interface QueryMeta {
   metricName?: string;
 }
 
-function labelText(labels: { key?: { name?: string }; value?: unknown }[] | undefined): string {
-  if (!labels || labels.length === 0) return '';
-  return labels.map((l) => `${l.key?.name ?? ''}=${String(l.value ?? '')}`).join(',');
-}
-
 /**
  * Time-series naming (mirrors observable behavior of `getLabelName` + `getLegend`).
  * Example: template `{{mountpoint}}` + labels `{mountpoint: /boot/efi}` → `/boot/efi`.

@@ -36,8 +36,9 @@ type TimeState = { relativeTime: string } | { startTime: number; endTime: number
 /** Options threaded from the host app down to every panel. */
 interface DrilldownOptions {
   mode: DrilldownMode;
-  resolveLink: (link: ResolvedLink) => 'internal' | 'external' | 'ignore';
-  onInternalNavigate: (url: string, focus: string) => void;
+  /** True when the link points at a different dashboard in this embed (same-dashboard links are no-ops). */
+  isInternalLink: (link: ResolvedLink) => boolean;
+  onInternalNavigate: (link: ResolvedLink, focus: string) => void;
   onOpenMenu: (payload: DrilldownClickPayload, panelTitle: string) => void;
 }
 
@@ -66,35 +67,35 @@ function WidgetSlot(props: {
   // Attach the panel identity and its resolved context links (native `resolvePanelContextLinks`)
   // to the click payload: which panel was clicked, and where its `spec.links` point once
   // variables/time/clicked filters are substituted.
+  const { widget, variables, startMs, endMs, drilldown } = props;
   const handleDrilldown = useMemo(() => {
-    const drilldown = props.drilldown;
-    if (!drilldown || drilldown.mode === 'off') return undefined;
+    if (!drilldown) return undefined;
     return (raw: DrilldownClickPayload): void => {
       const links = resolvePanelLinks(
-        props.widget.links,
+        widget.links,
         buildTemplateContext({
-          variables: props.variables,
-          startMs: props.startMs,
-          endMs: props.endMs,
+          variables,
+          startMs,
+          endMs,
           filters: raw.context.filters,
         }),
       );
-      const payload: DrilldownClickPayload = { ...raw, panelId: props.widget.id, links };
+      const payload: DrilldownClickPayload = { ...raw, panelId: widget.id, links };
       if (links.length === 0) return;
 
       // navigate (default): jump straight to the first in-embed target, no menu.
       if (drilldown.mode === 'navigate') {
-        const target = links.find((link) => drilldown.resolveLink(link) === 'internal');
+        const target = links.find((link) => drilldown.isInternalLink(link));
         if (target) {
-          drilldown.onInternalNavigate(target.url, buildFocus(payload.context.filters));
+          drilldown.onInternalNavigate(target, buildFocus(payload.context.filters));
           return;
         }
         // No in-embed target: fall through to the menu so the click is never a dead end.
       }
 
-      drilldown.onOpenMenu(payload, widgetTitle(props.widget));
+      drilldown.onOpenMenu(payload, widgetTitle(widget));
     };
-  }, [props]);
+  }, [drilldown, widget, variables, startMs, endMs]);
 
   return (
     <WidgetCard
@@ -107,7 +108,6 @@ function WidgetSlot(props: {
       locale={props.locale}
       startMs={props.startMs}
       endMs={props.endMs}
-      variables={props.variables}
       onDrilldownClick={handleDrilldown}
     />
   );
@@ -137,40 +137,34 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
 
   // In-place dashboard hopping: a context link may point at `/embed/<id>` instead of leaving to
   // SigNoz, so the click swaps the dashboard inside the same iframe (no new tab, no reload).
-  const navigateInternal = (url: string, focus?: string): void => {
-    const target = parseDrilldownTarget(url, params.dashboardId);
-    const href = buildDrilldownUrl(target, {
+  const navigateInternal = (link: ResolvedLink, focus: string): void => {
+    const target = parseDrilldownTarget(link.url, params.dashboardId);
+    const finalUrl = buildDrilldownUrl(target, {
       relativeTime: 'relativeTime' in timeState ? timeState.relativeTime : null,
       startTime: 'relativeTime' in timeState ? null : timeState.startTime,
       endTime: 'relativeTime' in timeState ? null : timeState.endTime,
       // Carry the host's chrome settings (toolbar/title/theme/...) into the target dashboard.
       inherit: new URLSearchParams(window.location.search),
+      focus,
     });
-    const next = new URLSearchParams(href.split('?')[1] ?? '');
-    if (focus) next.set('focus', focus);
-    const finalUrl = `/embed/${target.dashboardId}?${next.toString()}`;
     // Emit before navigating: the host may want to remember where the user was.
     window.dispatchEvent(new CustomEvent('signoz-embed:drilldown', { detail: { url: finalUrl, target, focus } }));
     window.location.assign(finalUrl);
   };
 
-
-
   // Menu link click: internal targets navigate in place, external ones open a tab (native parity).
   const openLink = (link: ResolvedLink): void => {
     const target = parseDrilldownTarget(link.url, params.dashboardId);
-    if (target.internal && target.dashboardId !== params.dashboardId) {
-      setMenu(null);
-      navigateInternal(link.url, menu ? buildFocus(menu.payload.context.filters) : '');
-      return;
-    }
     if (target.internal) {
-      // Points at the current dashboard: nothing to navigate to.
-      setMenu(null);
-      return;
+      // A link back to this dashboard has nowhere to go, so the click is a no-op.
+      if (target.dashboardId !== params.dashboardId) {
+        navigateInternal(link, menu ? buildFocus(menu.payload.context.filters) : '');
+      }
+    } else if (link.targetBlank) {
+      window.open(link.url, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.assign(link.url);
     }
-    if (link.targetBlank) window.open(link.url, '_blank', 'noopener,noreferrer');
-    else window.location.assign(link.url);
     setMenu(null);
   };
 
@@ -178,11 +172,9 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
     ? undefined
     : {
         mode: params.drilldown,
-        resolveLink: (link) => {
+        isInternalLink: (link) => {
           const target = parseDrilldownTarget(link.url, params.dashboardId);
-          if (!target.internal) return link.targetBlank ? 'external' : 'ignore';
-          // An internal link to the dashboard we are already on is a no-op, not a navigation.
-          return target.dashboardId === params.dashboardId ? 'ignore' : 'internal';
+          return target.internal && target.dashboardId !== params.dashboardId;
         },
         onInternalNavigate: navigateInternal,
         onOpenMenu: (payload, panelTitle) => setMenu({ payload, panelTitle }),
@@ -355,7 +347,7 @@ export function EmbedApp(props: { theme: ThemeModule; params: ParsedEmbedParams;
                     const span = l ? Math.max(1, Math.min(12, Math.round(l.w))) : 12;
                     const hPx = l ? l.h * 50 : 200;
                     return (
-                      <div key={w.id} style={{ gridColumn: `span ${span}`, minWidth: 0 }} title={widgetTitle(w)}>
+                      <div key={w.id} style={{ gridColumn: `span ${span}`, minWidth: 0 }}>
                         <div style={{ height: hPx }}>
                           <WidgetSlot
                             theme={theme}

@@ -32,7 +32,7 @@ function escapeReg(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function quoteIdent(v: string | number | boolean): string {
+export function quoteIdent(v: string | number | boolean): string {
   if (typeof v === 'string') return `'${v.replace(/'/g, "\\'")}'`;
   return String(v);
 }

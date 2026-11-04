@@ -64,8 +64,6 @@ export interface EmbedWidget {
   yAxisUnit?: string;
   /** Panel context links (spec.links) — drill-down targets. */
   links?: PanelLink[];
-  /** Group-by field names of the first builder query (drives click-to-set-variable). */
-  groupBy?: string[];
   [k: string]: unknown;
 }
 
@@ -224,30 +222,6 @@ function panelLinks(panelSpec: Record<string, unknown>): PanelLink[] | undefined
   return links.length > 0 ? links : undefined;
 }
 
-/** Group-by field names of the first query envelope (CompositeQuery included), unquoted. */
-function panelGroupBy(panelSpec: Record<string, unknown>): string[] | undefined {
-  const queries = Array.isArray(panelSpec.queries) ? panelSpec.queries : [];
-  const first = queries[0] as Record<string, unknown> | undefined;
-  const spec = (first?.spec ?? {}) as Record<string, unknown>;
-  const plugin = (spec.plugin ?? {}) as Record<string, unknown>;
-  const pluginSpec = (plugin.spec ?? {}) as Record<string, unknown>;
-  const candidates =
-    plugin.kind === 'signoz/CompositeQuery' && Array.isArray(pluginSpec.queries)
-      ? pluginSpec.queries
-      : [first];
-  for (const candidate of candidates) {
-    const entry = (candidate ?? {}) as Record<string, unknown>;
-    const entrySpec = (entry.spec ?? {}) as Record<string, unknown>;
-    const groupBy = entrySpec.groupBy;
-    if (!Array.isArray(groupBy)) continue;
-    const names = groupBy
-      .map((g) => (g && typeof g === 'object' ? (g as Record<string, unknown>).name : undefined))
-      .filter((name): name is string => typeof name === 'string' && name !== '');
-    if (names.length > 0) return names;
-  }
-  return undefined;
-}
-
 function v2Dashboard(data: Record<string, unknown>): DashboardData | null {
   const spec = data.spec as Record<string, unknown> | undefined;
   if (!spec || typeof spec !== 'object' || !spec.panels || typeof spec.panels !== 'object') return null;
@@ -268,7 +242,6 @@ function v2Dashboard(data: Record<string, unknown>): DashboardData | null {
       text: typeof pluginSpec.text === 'string' ? pluginSpec.text : undefined,
       yAxisUnit: typeof formatting.unit === 'string' ? formatting.unit : undefined,
       links: panelLinks(panelSpec),
-      groupBy: panelGroupBy(panelSpec),
     };
   });
   const layout: DashboardData['layout'] = [];

@@ -8,19 +8,9 @@
  * in place (see `core/drilldownNav.ts`).
  */
 import { useEffect, useRef } from 'react';
-import type { EmbedLocale } from '@signoz-open-dashboard/shared';
-import type { DrilldownClickPayload, ResolvedLink } from '../../core/drilldown';
+import { shortTime } from '../../signoz/formatTime';
+import type { DrilldownMenuProps } from '../types';
 import { shadcnStrings } from './locale';
-
-export interface DrilldownMenuProps {
-  payload: DrilldownClickPayload;
-  /** Panel title, shown in the header. */
-  panelTitle: string;
-  locale?: EmbedLocale;
-  /** Open a link in place (internal) or a new tab (external). */
-  onLink: (link: ResolvedLink) => void;
-  onClose: () => void;
-}
 
 function MenuRow(props: {
   icon: string;
@@ -121,10 +111,6 @@ export function DrilldownMenu(props: DrilldownMenuProps): JSX.Element | null {
 
 function formatWindow(range?: { startTime: number; endTime: number }): string {
   if (!range) return '—';
-  const fmt = (s: number): string => {
-    const d = new Date(s * 1000);
-    const pad = (n: number): string => String(n).padStart(2, '0');
-    return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  };
-  return `${fmt(range.startTime)} ~ ${fmt(range.endTime)}`;
+  // The context carries epoch seconds; the formatter takes milliseconds.
+  return `${shortTime(range.startTime * 1000)} ~ ${shortTime(range.endTime * 1000)}`;
 }

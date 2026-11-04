@@ -57,7 +57,7 @@ export function SchnInfoTip({ content }: { content: string }): JSX.Element {
       </span>
       <span
         role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 w-max max-w-[280px] -translate-x-1/2 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left text-[11px] font-normal leading-4 text-zinc-900 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+        className="pointer-events-none absolute left-0 top-full z-50 mt-1.5 w-max max-w-[min(280px,calc(100vw-32px))] translate-x-0 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left text-[11px] font-normal leading-4 text-zinc-900 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
       >
         {content}
       </span>

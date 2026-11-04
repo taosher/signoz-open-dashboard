@@ -18,80 +18,21 @@ export interface DrilldownTarget {
   internal: boolean;
 }
 
-const EMBED_PATH_RE = /\/embed\/([0-9a-f-]{36})/i;
+const EMBED_PATH_RE = /^\/embed\/([0-9a-f-]{36})(?:\/|$)/i;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-/** Params that must never be copied into a same-dashboard rewrite (they would reset the target). */
-const DROP_PARAMS = new Set(['apikey', 'api_key', 'dashboard']);
+/**
+ * Synthetic base used only to parse relative links with the `URL` constructor. `.invalid` is
+ * reserved by RFC 2606 as never-resolvable, so it can never collide with a real host and is never
+ * fetched — this value only ever exists in memory as an origin comparison target.
+ */
+const EMBED_BASE = 'http://embed.invalid';
 
 /**
- * Rewrites a resolved context-link URL into an embed navigation target.
- *
- * Recognised as internal when the URL contains `/embed/<uuid>` (absolute or relative) or carries
- * `?dashboard=<uuid>`. Everything else returns `internal: false` so the caller can fall back to
- * opening a new tab, exactly like native.
+ * Display params that survive a dashboard hop. Without them the target loses the host's chrome
+ * settings — most visibly `toolbar=false`, which would make the drill-down page sprout the toolbar
+ * the host deliberately hid. One list, used for both "carry from the link" and "inherit from the page".
  */
-export function parseDrilldownTarget(
-  url: string,
-  fallbackDashboardId: string,
-): DrilldownTarget {
-  const embedMatch = EMBED_PATH_RE.exec(url);
-  const questionMark = url.indexOf('?');
-  const query = questionMark === -1 ? '' : url.slice(questionMark + 1);
-  const params = new URLSearchParams(query);
-
-  const explicit = params.get('dashboard');
-  let dashboardId = embedMatch?.[1] ?? '';
-  if (!dashboardId && explicit && UUID_RE.test(explicit)) {
-    dashboardId = explicit;
-  }
-
-  const internal = dashboardId !== '';
-  const targetId = internal ? dashboardId : fallbackDashboardId;
-
-  const carried = new URLSearchParams();
-  for (const [key, value] of params.entries()) {
-    const lower = key.toLowerCase();
-    if (DROP_PARAMS.has(lower)) continue;
-    // Only embed params survive the hop; explorer-ish params (compositeQuery etc.) would be noise.
-    if (!isCarryableParam(key)) continue;
-    carried.append(key, value);
-  }
-
-  return { dashboardId: targetId, params: carried, internal };
-}
-
-/** Params worth carrying into the target dashboard. */
-function isCarryableParam(key: string): boolean {
-  const lower = key.toLowerCase();
-  if (lower.startsWith('var-')) return true;
-  return (
-    lower === 'relativetime' ||
-    lower === 'starttime' ||
-    lower === 'endtime' ||
-    lower === 'theme' ||
-    lower === 'mode' ||
-    lower === 'locale' ||
-    lower === 'refresh' ||
-    lower === 'toolbar' ||
-    lower === 'title' ||
-    lower === 'drilldown' ||
-    lower === 'focus'
-  );
-}
-
-/**
- * Builds the in-place URL for a target dashboard.
- *
- * Time is passed through untouched: the embed parses epoch seconds (native SigNoz links use ms),
- * and `crossDashboardTime` is responsible for converting when the two conventions disagree.
- */
-/**
- * Display params that must survive a dashboard hop. Without them the target loses the host's
- * chrome settings — most visibly `toolbar=false`, which would make the drill-down page sprout
- * the toolbar the host deliberately hid.
- */
-const INHERITED_DISPLAY_PARAMS = [
+const DISPLAY_PARAMS = [
   'toolbar',
   'title',
   'theme',
@@ -100,6 +41,7 @@ const INHERITED_DISPLAY_PARAMS = [
   'refresh',
   'annotations',
   'drilldown',
+  'focus',
   'timeControl',
   'refreshControl',
   'modeControl',
@@ -107,6 +49,62 @@ const INHERITED_DISPLAY_PARAMS = [
   'localeControl',
 ] as const;
 
+const DISPLAY_PARAM_SET = new Set<string>(DISPLAY_PARAMS.map((key) => key.toLowerCase()));
+
+/**
+ * Rewrites a resolved context-link URL into an embed navigation target.
+ *
+ * A link is internal when it resolves onto the embed's own base — i.e. it is relative
+ * (`/embed/<uuid>`, `?dashboard=<uuid>`) rather than absolute or protocol-relative. Everything
+ * else returns `internal: false` so the caller can open it like native does.
+ */
+export function parseDrilldownTarget(
+  url: string,
+  fallbackDashboardId: string,
+): DrilldownTarget {
+  const parsed = new URL(url.trim(), EMBED_BASE);
+  const onEmbedOrigin = parsed.origin === EMBED_BASE;
+  const embedMatch = onEmbedOrigin ? EMBED_PATH_RE.exec(parsed.pathname) : null;
+  const params = parsed.searchParams;
+
+  const explicit = params.get('dashboard');
+  let dashboardId = embedMatch?.[1] ?? '';
+  if (!dashboardId && onEmbedOrigin && explicit && UUID_RE.test(explicit)) {
+    dashboardId = explicit;
+  }
+
+  const internal = dashboardId !== '';
+  const targetId = internal ? dashboardId : fallbackDashboardId;
+
+  // Only embed params survive the hop; explorer-ish params (compositeQuery etc.) would be noise.
+  const carried = new URLSearchParams();
+  for (const [key, value] of params.entries()) {
+    if (isCarryableParam(key)) carried.append(key, value);
+  }
+
+  return { dashboardId: targetId, params: carried, internal };
+}
+
+/** Params worth carrying into the target dashboard. */
+function isCarryableParam(key: string): boolean {
+  const lower = key.toLowerCase();
+  return (
+    lower.startsWith('var-') ||
+    lower === 'relativetime' ||
+    lower === 'starttime' ||
+    lower === 'endtime' ||
+    DISPLAY_PARAM_SET.has(lower)
+  );
+}
+
+/**
+ * Builds the in-place URL for a target dashboard: the host's chrome settings and current time
+ * window are inherited, then the link's own params and the click scope (`focus`) are applied last
+ * so they win.
+ *
+ * Time is passed through untouched — the embed parses epoch seconds, and link authors targeting
+ * native SigNoz are responsible for emitting the convention the embed reads.
+ */
 export function buildDrilldownUrl(
   target: DrilldownTarget,
   current: {
@@ -115,12 +113,14 @@ export function buildDrilldownUrl(
     endTime: number | null;
     /** The current embed's own search params, inherited so chrome settings carry over. */
     inherit?: URLSearchParams | null;
+    /** Click scope ANDed onto every query of the target; omitted when the click carried no filters. */
+    focus?: string;
   },
 ): string {
   const params = new URLSearchParams();
 
   // Chrome/display settings first so the target renders like the page we came from.
-  for (const key of INHERITED_DISPLAY_PARAMS) {
+  for (const key of DISPLAY_PARAMS) {
     const value = current.inherit?.get(key);
     if (value !== null && value !== undefined && value !== '') params.set(key, value);
   }
@@ -136,19 +136,7 @@ export function buildDrilldownUrl(
   for (const [key, value] of target.params.entries()) {
     params.set(key, value);
   }
-  return `/embed/${target.dashboardId}?${params.toString()}`;
-}
+  if (current.focus) params.set('focus', current.focus);
 
-/**
- * Native SigNoz emits `{{timestamp_start}}` / `{{timestamp_end}}` in **milliseconds**
- * (`useDrilldownContextVariables` divides ns by 1e6), while the embed parses `startTime`
- * as **epoch seconds** (`parseEpoch`). Links authored for native SigNoz therefore arrive
- * 1000× too large; scale them back so a cross-system link still lands on the right window.
- */
-export function normalizeTimestamp(value: string | null): string | null {
-  if (value === null) return null;
-  const n = Number(value);
-  if (!Number.isFinite(n) || n <= 0) return value;
-  // Anything past year 5000 in ms (~1.5e13) can only be an ms value meant as seconds.
-  return n > 1.5e13 ? String(Math.floor(n / 1000)) : value;
+  return `/embed/${target.dashboardId}?${params.toString()}`;
 }
