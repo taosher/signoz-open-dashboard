@@ -2,6 +2,8 @@
  * Dashboard types (custom contract for our own UI, only the subset needed for rendering; unknown fields pass through unvalidated).
  * Reference: SigNoz 0.97.0 `frontend/src/types/api/dashboard/getAll.ts`.
  */
+import type { PanelLink } from './drilldown';
+
 export type PanelTypeName =
   | 'graph'
   | 'table'
@@ -60,6 +62,10 @@ export interface EmbedWidget {
   query?: WidgetQuery;
   timePreferance?: string;
   yAxisUnit?: string;
+  /** Panel context links (spec.links) — drill-down targets. */
+  links?: PanelLink[];
+  /** Group-by field names of the first builder query (drives click-to-set-variable). */
+  groupBy?: string[];
   [k: string]: unknown;
 }
 
@@ -199,6 +205,49 @@ function v2Query(panel: Record<string, unknown>): WidgetQuery | undefined {
   return undefined;
 }
 
+function panelLinks(panelSpec: Record<string, unknown>): PanelLink[] | undefined {
+  const raw = panelSpec.links;
+  if (!Array.isArray(raw)) return undefined;
+  const links: PanelLink[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const link = item as Record<string, unknown>;
+    if (typeof link.url !== 'string' || link.url === '') continue;
+    links.push({
+      name: typeof link.name === 'string' ? link.name : undefined,
+      url: link.url,
+      tooltip: typeof link.tooltip === 'string' ? link.tooltip : undefined,
+      targetBlank: link.targetBlank !== false,
+      renderVariables: link.renderVariables !== false,
+    });
+  }
+  return links.length > 0 ? links : undefined;
+}
+
+/** Group-by field names of the first query envelope (CompositeQuery included), unquoted. */
+function panelGroupBy(panelSpec: Record<string, unknown>): string[] | undefined {
+  const queries = Array.isArray(panelSpec.queries) ? panelSpec.queries : [];
+  const first = queries[0] as Record<string, unknown> | undefined;
+  const spec = (first?.spec ?? {}) as Record<string, unknown>;
+  const plugin = (spec.plugin ?? {}) as Record<string, unknown>;
+  const pluginSpec = (plugin.spec ?? {}) as Record<string, unknown>;
+  const candidates =
+    plugin.kind === 'signoz/CompositeQuery' && Array.isArray(pluginSpec.queries)
+      ? pluginSpec.queries
+      : [first];
+  for (const candidate of candidates) {
+    const entry = (candidate ?? {}) as Record<string, unknown>;
+    const entrySpec = (entry.spec ?? {}) as Record<string, unknown>;
+    const groupBy = entrySpec.groupBy;
+    if (!Array.isArray(groupBy)) continue;
+    const names = groupBy
+      .map((g) => (g && typeof g === 'object' ? (g as Record<string, unknown>).name : undefined))
+      .filter((name): name is string => typeof name === 'string' && name !== '');
+    if (names.length > 0) return names;
+  }
+  return undefined;
+}
+
 function v2Dashboard(data: Record<string, unknown>): DashboardData | null {
   const spec = data.spec as Record<string, unknown> | undefined;
   if (!spec || typeof spec !== 'object' || !spec.panels || typeof spec.panels !== 'object') return null;
@@ -218,6 +267,8 @@ function v2Dashboard(data: Record<string, unknown>): DashboardData | null {
       query: v2Query(panelSpec),
       text: typeof pluginSpec.text === 'string' ? pluginSpec.text : undefined,
       yAxisUnit: typeof formatting.unit === 'string' ? formatting.unit : undefined,
+      links: panelLinks(panelSpec),
+      groupBy: panelGroupBy(panelSpec),
     };
   });
   const layout: DashboardData['layout'] = [];

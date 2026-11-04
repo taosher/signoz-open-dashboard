@@ -4,6 +4,7 @@
  */
 import type { ComponentType, ReactNode } from 'react';
 import type { ControlVisibility, EmbedLocale, EmbedMode } from '@signoz-open-dashboard/shared';
+import type { DrilldownClickPayload } from '../core/drilldown';
 import type { ErrorProps } from '../core/errors';
 import type { DashboardVariable, EmbedWidget } from '../core/dashboard';
 import type { ParsedV5 } from '../signoz/v5Response';
@@ -52,6 +53,22 @@ export interface WidgetProps {
   refreshing?: boolean;
   /** Locale (empty-state/subtle-hint copy follows it; defaults to zh). */
   locale?: EmbedLocale;
+  /** Current dashboard variable values (name → value); drill-down links resolve `{{var}}` from these. */
+  variables?: Record<string, unknown>;
+  /**
+   * Click-to-drill-down sink. The card renders native click semantics (query name, signal,
+   * group-by equality filters, clicked bucket window) and hands the payload out; what happens
+   * next (context menu, filter, navigation) is the consumer's decision, not the card's.
+   */
+  onDrilldownClick?: (payload: DrilldownClickPayload) => void;
+}
+
+export interface DrilldownMenuProps {
+  payload: DrilldownClickPayload;
+  panelTitle: string;
+  locale?: EmbedLocale;
+  onLink: (link: import('../core/drilldown').ResolvedLink) => void;
+  onClose: () => void;
 }
 
 export interface ThemeModule {
@@ -60,4 +77,6 @@ export interface ThemeModule {
   Toolbar: ComponentType<ToolbarProps>;
   WidgetCard: ComponentType<WidgetProps>;
   ErrorState: ComponentType<ErrorProps>;
+  /** Native-style drill-down context menu (optional; themes may omit it). */
+  DrilldownMenu?: ComponentType<DrilldownMenuProps>;
 }

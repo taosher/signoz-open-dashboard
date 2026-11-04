@@ -23,7 +23,15 @@ export interface WidgetQueryState {
 
 export function useWidgetQuery(
   widget: EmbedWidget,
-  opts: { startMs: number; endMs: number; variables: Record<string, unknown>; refreshKey: number; enabled?: boolean },
+  opts: {
+    startMs: number;
+    endMs: number;
+    variables: Record<string, unknown>;
+    refreshKey: number;
+    enabled?: boolean;
+    /** Extra filter ANDed onto every query (in-place drill-down scope). */
+    focus?: string;
+  },
 ): WidgetQueryState {
   const { dashboardId, apiKey } = useEmbedAuth();
   const enabled = opts.enabled ?? true;
@@ -33,6 +41,7 @@ export function useWidgetQuery(
     startMs: opts.startMs,
     endMs: opts.endMs,
     variables: opts.variables,
+    focus: opts.focus,
   });
   const payloadJson = built.payload ? stableHash(built.payload) : null;
 
@@ -46,6 +55,7 @@ export function useWidgetQuery(
       opts.endMs,
       varsHash,
       opts.refreshKey,
+      opts.focus ?? '',
       apiKey ? 'key' : 'nokey',
     ],
     queryFn: async ({ signal }): Promise<ParsedV5 | null> => {
