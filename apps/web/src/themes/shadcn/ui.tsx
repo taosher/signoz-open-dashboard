@@ -23,7 +23,7 @@ export function SchnButton(
         size === 'sm' && 'h-7 px-2.5 text-xs',
         variant === 'default' && 'bg-zinc-900 text-zinc-50 hover:bg-zinc-800 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200',
         variant === 'outline' &&
-          'border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900',
+        'border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:hover:bg-zinc-900',
         variant === 'ghost' && 'border-0 bg-transparent text-zinc-900 hover:bg-zinc-100 dark:text-zinc-50 dark:hover:bg-zinc-900',
         className,
       )}
@@ -49,11 +49,30 @@ export function SchnSelect(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.
   );
 }
 
-export function SchnCard({ title, extra, children }: { title: ReactNode; extra?: ReactNode; children: ReactNode }): JSX.Element {
+export function SchnInfoTip({ content }: { content: string }): JSX.Element {
+  return (
+    <span className="group relative inline-flex shrink-0" aria-label={content} tabIndex={0}>
+      <span className="inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-zinc-300 text-[12px] font-semibold leading-none text-zinc-500 outline-none dark:border-zinc-700 dark:text-zinc-400">
+        i
+      </span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute left-1/2 top-full z-50 mt-1.5 w-max max-w-[280px] -translate-x-1/2 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left text-[11px] font-normal leading-4 text-zinc-900 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+      >
+        {content}
+      </span>
+    </span>
+  );
+}
+
+export function SchnCard({ title, description, extra, children }: { title: ReactNode; description?: string; extra?: ReactNode; children: ReactNode }): JSX.Element {
   return (
     <div className="flex h-full flex-col rounded-xl border border-zinc-200 bg-white text-zinc-950 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
       <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-3 py-2 dark:border-zinc-900">
-        <h3 className="truncate text-[13px] font-semibold">{title}</h3>
+        <div className="flex min-w-0 min-h-[24px] items-center gap-1">
+          <h3 className="truncate text-[13px] font-semibold">{title}</h3>
+          {description ? <SchnInfoTip content={description} /> : null}
+        </div>
         {extra}
       </div>
       <div className="flex min-h-0 flex-1 flex-col p-2">{children}</div>
@@ -63,7 +82,7 @@ export function SchnCard({ title, extra, children }: { title: ReactNode; extra?:
 
 export function SchnSkeleton(): JSX.Element {
   return (
-    <div className="flex min-h-[120px] flex-1 animate-pulse flex-col gap-2 p-1">
+    <div className="flex flex-1 animate-pulse flex-col gap-2 p-1">
       <div className="h-4 w-2/3 rounded bg-zinc-200 dark:bg-zinc-800" />
       <div className="h-4 w-full rounded bg-zinc-200 dark:bg-zinc-800" />
       <div className="h-4 w-5/6 rounded bg-zinc-200 dark:bg-zinc-800" />
@@ -73,7 +92,7 @@ export function SchnSkeleton(): JSX.Element {
 
 export function SchnEmpty({ text }: { text: string }): JSX.Element {
   return (
-    <div className="flex min-h-[120px] flex-1 items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
+    <div className="flex flex-1 items-center justify-center text-xs text-zinc-500 dark:text-zinc-400">
       {text}
     </div>
   );
