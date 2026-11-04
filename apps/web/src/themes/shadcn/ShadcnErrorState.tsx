@@ -25,18 +25,24 @@ const TITLE_EN: Record<string, string> = {
 export function ShadcnErrorState(props: ErrorProps): JSX.Element {
   const table = props.locale === 'en' ? TITLE_EN : TITLE_ZH;
   return (
-    <div className="flex min-h-[200px] flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-      <div className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-        {table[props.code] ?? props.code}
+    // Sizing follows flex, never a fixed height: the outer box fills whatever it is given
+    // (`flex-1` + `min-h-0`) and scrolls instead of overflowing. The inner block uses `m-auto`
+    // rather than `justify-center` so it stays centred when there is room and stays reachable
+    // (not clipped off the top edge) when the container is shorter than the content.
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="m-auto flex flex-col items-center gap-2 p-8 text-center">
+        <div className="text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+          {table[props.code] ?? props.code}
+        </div>
+        <div className="max-w-md text-xs text-zinc-500 dark:text-zinc-400">{props.message}</div>
+        {props.requestId ? <div className="text-[11px] text-zinc-400">requestId: {props.requestId}</div> : null}
+        <div className="text-[11px] text-zinc-400">{props.code}</div>
+        {props.retry && props.onRetry ? (
+          <SchnButton variant="default" onClick={props.onRetry}>
+            {props.locale === 'en' ? 'Retry' : '重试'}
+          </SchnButton>
+        ) : null}
       </div>
-      <div className="max-w-md text-xs text-zinc-500 dark:text-zinc-400">{props.message}</div>
-      {props.requestId ? <div className="text-[11px] text-zinc-400">requestId: {props.requestId}</div> : null}
-      <div className="text-[11px] text-zinc-400">{props.code}</div>
-      {props.retry && props.onRetry ? (
-        <SchnButton variant="default" onClick={props.onRetry}>
-          {props.locale === 'en' ? 'Retry' : '重试'}
-        </SchnButton>
-      ) : null}
     </div>
   );
 }
