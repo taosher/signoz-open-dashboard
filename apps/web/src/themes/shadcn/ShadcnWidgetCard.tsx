@@ -17,9 +17,19 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { useId, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { useColorMode } from '../../core/colorMode';
+import { renderMarkdown } from '../../core/markdown';
+import { shortTime } from '../../signoz/formatTime';
 import { widgetTitle } from '../../core/dashboard';
+import {
+  chartClickContext,
+  numberClickContext,
+  pieClickContext,
+  tableClickContext,
+  type DrilldownClickPayload,
+  type QueryMeta,
+} from '../../core/drilldown';
 import { toErrorProps } from '../../core/errors';
 import { formatValue } from '../../signoz/format';
 import type { UiSeries, UiTable } from '../../signoz/v5Response';
@@ -37,10 +47,14 @@ import {
 import { shadcnStrings } from './locale';
 import { SchnCard, SchnEmpty, SchnScrollArea, SchnSkeleton } from './ui';
 
-function shortTime(ms: number): string {
-  const d = new Date(ms);
-  const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function MarkdownText({ value }: { value: string }): JSX.Element {
+  const html = useMemo(() => renderMarkdown(value), [value]);
+  return (
+    <div
+      className="schn-markdown prose prose-zinc max-w-none dark:prose-invert"
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 function fullTime(ms: number): string {
@@ -76,17 +90,59 @@ function toRows(series: UiSeries[], colors: string[]): RowSeries {
   return { keys, rows, config };
 }
 
-function SchnTimeSeries({ series, unit, locale }: { series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
+/** Native `enrichChartClick` for time-series and bar renderers: clicked series + clicked bucket. */
+function useChartClick(params: {
+  series: UiSeries[];
+  colors: string[];
+  queries: QueryMeta[];
+  onPointClick?: (payload: DrilldownClickPayload) => void;
+}): (state: { activeDataKey?: unknown; activeLabel?: unknown }, event: React.MouseEvent<SVGGraphicsElement>) => void {
+  const { series, colors, queries, onPointClick } = params;
+  return useCallback(
+    (state, event) => {
+      if (!onPointClick || state.activeDataKey === undefined) return;
+      const index = Number(String(state.activeDataKey).replace(/^s/, ''));
+      const clicked = series[index];
+      if (!clicked || clicked.points.length === 0) return;
+      const bucketMs = Number(state.activeLabel);
+      const bucket = Number.isFinite(bucketMs) ? bucketMs : clicked.points[clicked.points.length - 1].t;
+      const payload = chartClickContext({
+        point: { x: event.clientX, y: event.clientY },
+        queryName: clicked.queryName,
+        labels: clicked.labels,
+        legend: clicked.legend,
+        color: colors[index % colors.length],
+        timestamp: Math.floor(bucket / 1000),
+        queries,
+      });
+      if (payload) onPointClick(payload);
+    },
+    [onPointClick, series, colors, queries],
+  );
+}
+
+function SchnTimeSeries(props: {
+  series: UiSeries[];
+  unit?: string;
+  locale?: EmbedLocale;
+  onPointClick?: (payload: DrilldownClickPayload) => void;
+  queries: QueryMeta[];
+}): JSX.Element {
+  const { series, unit, locale, onPointClick, queries } = props;
   const dark = useColorMode() === 'dark';
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const colors = dark ? SCHN_CHART_COLORS_DARK : SCHN_CHART_COLORS_LIGHT;
   const { keys, rows, config } = toRows(series, colors);
   const grid = dark ? '#27272a' : '#e4e4e7';
   const tick = dark ? '#a1a1aa' : '#71717a';
+
+  // Native `enrichChartClick`: resolve the clicked series (dataKey → series) plus its bucket.
+  const handleClick = useChartClick({ series, colors, queries, onPointClick });
+
   if (rows.length === 0) return <SchnEmpty text={shadcnStrings(locale ?? 'zh').noData} />;
   return (
     <ChartContainer config={config} className="min-h-[180px] flex-1">
-      <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} onClick={onPointClick ? handleClick : undefined}>
         <defs>
           {keys.map((k) => (
             <linearGradient key={k} id={`${uid}-${k}`} x1="0" y1="0" x2="0" y2="1">
@@ -138,16 +194,27 @@ function SchnTimeSeries({ series, unit, locale }: { series: UiSeries[]; unit?: s
   );
 }
 
-function SchnBars({ series, unit, locale }: { series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
+function SchnBars(props: {
+  series: UiSeries[];
+  unit?: string;
+  locale?: EmbedLocale;
+  onPointClick?: (payload: DrilldownClickPayload) => void;
+  queries: QueryMeta[];
+}): JSX.Element {
+  const { series, unit, locale, onPointClick, queries } = props;
   const dark = useColorMode() === 'dark';
   const colors = dark ? SCHN_CHART_COLORS_DARK : SCHN_CHART_COLORS_LIGHT;
   const { keys, rows, config } = toRows(series, colors);
   const grid = dark ? '#27272a' : '#e4e4e7';
   const tick = dark ? '#a1a1aa' : '#71717a';
+
+  // Bars share the time-series click semantics (clicked series + clicked bucket ± step).
+  const handleClick = useChartClick({ series, colors, queries, onPointClick });
+
   if (rows.length === 0) return <SchnEmpty text={shadcnStrings(locale ?? 'zh').noData} />;
   return (
     <ChartContainer config={config} className="min-h-[180px] flex-1">
-        <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+        <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} onClick={onPointClick ? handleClick : undefined}>
         <CartesianGrid vertical={false} stroke={grid} />
         <XAxis
           dataKey="t"
@@ -181,10 +248,20 @@ function SchnBars({ series, unit, locale }: { series: UiSeries[]; unit?: string;
   );
 }
 
-function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: UiSeries[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
+function SchnPie(props: {
+  tables: UiTable[];
+  series: UiSeries[];
+  unit?: string;
+  locale?: EmbedLocale;
+  onPointClick?: (payload: DrilldownClickPayload) => void;
+  queries: QueryMeta[];
+  timeRange: { startTime: number; endTime: number };
+}): JSX.Element {
+  const { tables, series, unit, locale, onPointClick, queries, timeRange } = props;
   const dark = useColorMode() === 'dark';
   const colors = dark ? SCHN_CHART_COLORS_DARK : SCHN_CHART_COLORS_LIGHT;
-  const columnItems = tables.flatMap((t) =>
+  // Slices keep their source series (labels + query name) so a click carries native filter semantics.
+  const columnItems: { name: string; value: number; source?: UiSeries }[] = tables.flatMap((t) =>
     t.columns
       .filter((c) => c.isValue)
       .map((c) => {
@@ -193,15 +270,15 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
           const n = Number(r[c.id]);
           if (Number.isFinite(n)) v += n;
         }
-        return { name: c.name, value: v };
+        return { name: c.name, value: v, source: series.find((s) => s.queryName === c.queryName) };
       }),
   );
   const seen = new Set<string>();
-  const seriesItems: { name: string; value: number }[] = [];
+  const seriesItems: { name: string; value: number; source?: UiSeries }[] = [];
   for (const s of series) {
     if (s.points.length === 0 || seen.has(s.legend)) continue;
     seen.add(s.legend);
-    seriesItems.push({ name: s.legend, value: s.points[s.points.length - 1].v });
+    seriesItems.push({ name: s.legend, value: s.points[s.points.length - 1].v, source: s });
   }
   const items = (columnItems.length > 0 ? columnItems : seriesItems).filter((it) => it.value > 0);
   const total = items.reduce((s, it) => s + it.value, 0);
@@ -210,13 +287,46 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
   items.forEach((it, i) => {
     config[`p${i}`] = { label: it.name, color: colors[i % colors.length] };
   });
+
+  // Native `enrichPieClick`: the slice's group-by labels become equality filters.
+  const handleSliceClick = (
+    _data: unknown,
+    index: number,
+    event: React.MouseEvent<SVGGraphicsElement>,
+  ): void => {
+    if (!onPointClick) return;
+    const item = items[index];
+    if (!item) return;
+    const payload = pieClickContext({
+      point: { x: event.clientX, y: event.clientY },
+      queryName: item.source?.queryName ?? '',
+      labels: item.source?.labels ?? {},
+      label: item.name,
+      color: colors[index % colors.length],
+      timeRange,
+      queries,
+    });
+    if (payload) onPointClick(payload);
+  };
+
   return (
     <div className="relative min-h-[180px] flex-1">
       <ChartContainer config={config} className="absolute inset-0">
         <PieChart>
           <Tooltip allowEscapeViewBox={{ x: true, y: true }} wrapperStyle={{ zIndex: 100 }} content={<ChartTooltipContent formatValue={(v) => formatValue(v, unit)} />} />
-          <Pie data={items} dataKey="value" nameKey="name" cx="50%" cy="44%" innerRadius="58%" outerRadius="82%" paddingAngle={2} strokeWidth={0}>
-            {items.map((it, i) => (
+          <Pie
+            data={items}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="44%"
+            innerRadius="58%"
+            outerRadius="82%"
+            paddingAngle={2}
+            strokeWidth={0}
+            onClick={onPointClick ? handleSliceClick : undefined}
+          >
+            {items.map((_it, i) => (
               <Cell key={i} fill={colors[i % colors.length]} />
             ))}
           </Pie>
@@ -237,7 +347,15 @@ function SchnPie({ tables, series, unit, locale }: { tables: UiTable[]; series: 
   );
 }
 
-function SchnTable({ tables, unit, locale }: { tables: UiTable[]; unit?: string; locale?: EmbedLocale }): JSX.Element {
+function SchnTable(props: {
+  tables: UiTable[];
+  unit?: string;
+  locale?: EmbedLocale;
+  onCellClick?: (payload: DrilldownClickPayload) => void;
+  queries: QueryMeta[];
+  timeRange: { startTime: number; endTime: number };
+}): JSX.Element {
+  const { tables, unit, locale, onCellClick, queries, timeRange } = props;
   const t = shadcnStrings(locale ?? 'zh');
   const t0 = tables[0];
   const [page, setPage] = useState(0);
@@ -266,7 +384,29 @@ function SchnTable({ tables, unit, locale }: { tables: UiTable[]; unit?: string;
                   {t0.columns.map((c) => {
                     const v = r[c.id];
                     return (
-                      <td key={c.id} className="max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100">
+                      <td
+                        key={c.id}
+                        onClick={
+                          onCellClick
+                            ? (event) => {
+                                const payload = tableClickContext({
+                                  point: { x: event.clientX, y: event.clientY },
+                                  record: r,
+                                  columnId: c.id,
+                                  columns: t0.columns,
+                                  timeRange,
+                                  queries,
+                                });
+                                if (payload) onCellClick(payload);
+                              }
+                            : undefined
+                        }
+                        className={
+                          onCellClick
+                            ? 'max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 hover:text-blue-600 dark:text-zinc-100 dark:hover:text-blue-400'
+                            : 'max-w-[240px] truncate px-2 py-1.5 tabular-nums text-zinc-900 dark:text-zinc-100'
+                        }
+                      >
                         {typeof v === 'number' ? formatValue(v, unit) : String(v ?? '')}
                       </td>
                     );
@@ -303,22 +443,55 @@ function SchnTable({ tables, unit, locale }: { tables: UiTable[]; unit?: string;
 }
 
 export function ShadcnWidgetCard(props: WidgetProps): JSX.Element {
-  const { widget, loading, data, error, onRetry } = props;
+  const { widget, loading, data, error, onRetry, startMs, endMs } = props;
   const title = widgetTitle(widget);
   const panel = String(widget.panelTypes ?? '');
   const t = shadcnStrings(props.locale ?? 'zh');
+  const queries = data?.queries ?? [];
+  // Scalar/table/pie clicks carry the fetched window (native behaviour).
+  const timeRange = { startTime: Math.floor(startMs / 1000), endTime: Math.floor(endMs / 1000) };
+  // Histogram and List opt out of drill-down (native `actions.drilldown = false`).
+  const drillable = panel !== 'histogram' && panel !== 'list';
+  const onDrilldownClick = drillable ? props.onDrilldownClick : undefined;
 
   let body: JSX.Element;
   if (loading && !data) {
     body = <SchnSkeleton />;
   } else if (error && !data) {
+    // No sizing override needed: the component fills whatever flex box it is given.
     body = <ShadcnErrorState {...toErrorProps(error, onRetry, props.locale)} />;
   } else if (panel === 'graph') {
-    body = <SchnTimeSeries series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
+    body = (
+      <SchnTimeSeries
+        series={data?.series ?? []}
+        unit={widget.yAxisUnit}
+        locale={props.locale}
+        onPointClick={onDrilldownClick}
+        queries={queries}
+      />
+    );
   } else if (panel === 'bar' || panel === 'histogram') {
-    body = <SchnBars series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
+    body = (
+      <SchnBars
+        series={data?.series ?? []}
+        unit={widget.yAxisUnit}
+        locale={props.locale}
+        onPointClick={onDrilldownClick}
+        queries={queries}
+      />
+    );
   } else if (panel === 'pie') {
-    body = <SchnPie tables={data?.tables ?? []} series={data?.series ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
+    body = (
+      <SchnPie
+        tables={data?.tables ?? []}
+        series={data?.series ?? []}
+        unit={widget.yAxisUnit}
+        locale={props.locale}
+        onPointClick={onDrilldownClick}
+        queries={queries}
+        timeRange={timeRange}
+      />
+    );
   } else if (panel === 'value') {
     const tables = data?.tables ?? [];
     const firstRow = tables[0]?.rows[0];
@@ -327,15 +500,61 @@ export function ShadcnWidgetCard(props: WidgetProps): JSX.Element {
     const singleSeries = data?.series[0];
     const single = singleSeries && singleSeries.points.length > 0 ? singleSeries.points[singleSeries.points.length - 1].v : NaN;
     const v = Number.isFinite(raw) ? raw : single;
+    // Native `enrichNumberClick`: the whole card is the value; no filters, panel window.
+    const queryName = firstCol?.queryName ?? singleSeries?.queryName ?? '';
+    const handleClick = onDrilldownClick
+      ? (event: React.MouseEvent<HTMLDivElement>): void => {
+          const payload = numberClickContext({
+            point: { x: event.clientX, y: event.clientY },
+            queryName,
+            timeRange,
+            queries,
+          });
+          if (payload) onDrilldownClick(payload);
+        }
+      : undefined;
     body = Number.isFinite(v) ? (
-      <div className="flex min-h-[120px] flex-1 items-center justify-center text-4xl font-bold tabular-nums">
+      <div
+        role={handleClick ? 'button' : undefined}
+        tabIndex={handleClick ? 0 : undefined}
+        onClick={handleClick}
+        onKeyDown={
+          handleClick
+            ? (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                event.preventDefault();
+                const rect = event.currentTarget.getBoundingClientRect();
+                handleClick({
+                  clientX: rect.left + rect.width / 2,
+                  clientY: rect.top + rect.height / 2,
+                } as React.MouseEvent<HTMLDivElement>);
+              }
+            : undefined
+        }
+        className={
+          handleClick
+            ? 'flex flex-1 cursor-pointer items-center justify-center rounded text-4xl font-bold tabular-nums'
+            : 'flex flex-1 items-center justify-center text-4xl font-bold tabular-nums'
+        }
+      >
         {formatValue(v, widget.yAxisUnit)}
       </div>
     ) : (
       <SchnEmpty text={t.noData} />
     );
   } else if (panel === 'table' || panel === 'list') {
-    body = <SchnTable tables={data?.tables ?? []} unit={widget.yAxisUnit} locale={props.locale} />;
+    body = (
+      <SchnTable
+        tables={data?.tables ?? []}
+        unit={widget.yAxisUnit}
+        locale={props.locale}
+        onCellClick={onDrilldownClick}
+        queries={queries}
+        timeRange={timeRange}
+      />
+    );
+  } else if (panel === 'text') {
+    body = <MarkdownText value={widget.text ?? ''} />;
   } else {
     body = <SchnEmpty text={`${t.unsupportedPanel}：${panel}`} />;
   }
@@ -343,6 +562,7 @@ export function ShadcnWidgetCard(props: WidgetProps): JSX.Element {
   return (
     <SchnCard
       title={title}
+      description={widget.description}
       extra={
         props.refreshing ? (
           <span className="text-[11px] text-zinc-400" title="refreshing">

@@ -2,7 +2,7 @@
 
 > The only TODO list. Rule: a task may only be checked off after "code complete + tests pass"; design changes must update `docs/product-tech-design.md` first.
 > M4 decision: roll back completely to the self-built UI + theme plugin architecture (see design doc §7). The old M2–M4 implementation and the 100% replica route (`src/vendor/`) have been deleted and archived, and will no longer be executed.
-> Fixed acceptance dashboards (compare the SigNoz console at `http://192.168.10.2:30303/dashboard/:id` against this project's dev server at `:5173/embed/:id`):
+> Fixed acceptance dashboards (compare the SigNoz console at `http://signoz.example.internal:30303/dashboard/:id` against this project's dev server at `:5173/embed/:id`):
 > `019ca330-42b0-7a60-b882-1e607e047942` (System Overview (系统资源总览), smoke) / `019c4bb6-d2ee-7b30-9423-67d3da2c9565` (K8s, QUERY variables + table + CH) / `019c4bb6-da7f-7ad7-80d0-c79de93e904d` (Postgres, DYNAMIC variables) / `019c4bb6-d24f-7213-a251-22e6f87dff5c` (ES, formula)
 
 - [x] M0: review and freeze `docs/product-tech-design.md`

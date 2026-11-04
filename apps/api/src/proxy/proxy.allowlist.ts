@@ -6,14 +6,14 @@ export type ProxyDecision =
   | { allowed: true }
   | { allowed: false; code: 'EMBED_READONLY' | 'EMBED_BLOCKED' };
 
-const DASHBOARD_ID_RE = /^\/api\/v1\/dashboards\/[^/]+$/;
+const DASHBOARD_ID_RE = /^\/api\/v(?:1|2)\/dashboards\/[^/]+$/;
 
 export function decideProxy(method: string, upstreamPath: string): ProxyDecision {
   const m = method.toUpperCase();
   const p = upstreamPath.split('?')[0];
 
   // Dashboards: only GET single dashboard is allowed (explicit /lock suffix denial maps to READONLY)
-  if (p.startsWith('/api/v1/dashboards')) {
+  if (p.startsWith('/api/v1/dashboards') || p.startsWith('/api/v2/dashboards')) {
     if (m === 'GET' && DASHBOARD_ID_RE.test(p)) return { allowed: true };
     // Explicit write operations map to READONLY, everything else maps to BLOCKED
     if (

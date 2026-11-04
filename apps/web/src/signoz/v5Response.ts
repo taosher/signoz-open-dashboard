@@ -19,13 +19,18 @@ export interface UiSeries {
 
 export interface UiTable {
   queryName: string;
-  columns: { id: string; name: string; isValue: boolean }[];
+  columns: { id: string; name: string; isValue: boolean; queryName?: string }[];
   rows: Record<string, unknown>[];
 }
 
-function labelText(labels: { key?: { name?: string }; value?: unknown }[] | undefined): string {
-  if (!labels || labels.length === 0) return '';
-  return labels.map((l) => `${l.key?.name ?? ''}=${String(l.value ?? '')}`).join(',');
+/** Per-query metadata needed by drill-down click semantics (native `BuilderQuery` subset). */
+export interface QueryMeta {
+  name: string;
+  signal?: string;
+  groupBy?: string[];
+  /** Step interval in seconds (from the response `meta.stepIntervals`, else the payload's bucket). */
+  step?: number;
+  metricName?: string;
 }
 
 /**
@@ -129,11 +134,16 @@ export function parseScalar(
     const queryName = rr.columns?.[0]?.queryName ?? String(rr.queryName ?? '');
     const columns = (rr.columns ?? []).map((c) => {
       const name = colDisplayName(c, legendMap, aggPerQuery[c.queryName]);
-      return { id: `${c.queryName}.${c.aggregationIndex ?? 0}.${c.name}`, name, isValue: c.columnType === 'aggregation' };
+      return {
+        id: `${c.queryName}.${c.aggregationIndex ?? 0}.${c.name}`,
+        name,
+        isValue: c.columnType === 'aggregation',
+        queryName: c.queryName,
+      };
     });
     const rows = (rr.data ?? []).map((row) => {
       const obj: Record<string, unknown> = {};
-      (rr.columns ?? []).forEach((c, i) => {
+      (rr.columns ?? []).forEach((_c, i) => {
         const col = columns[i];
         if (col) obj[col.id] = row[i];
       });
@@ -143,11 +153,81 @@ export function parseScalar(
   });
 }
 
+function parseRaw(
+  results: Record<string, unknown>[],
+): UiTable[] {
+  return results.flatMap((result) => {
+    const queryName = String(result.queryName ?? '');
+    const rawRows = Array.isArray(result.rows) ? result.rows : [];
+    const rows = rawRows.flatMap((rawRow) => {
+      const row = rawRow as Record<string, unknown>;
+      const data = row.data;
+      if (!data || typeof data !== 'object' || Array.isArray(data)) return [];
+      return [data as Record<string, unknown>];
+    });
+    if (rows.length === 0) return [];
+
+    const columnNames = [...new Set(rows.flatMap((row) => Object.keys(row)))];
+    return [{
+      queryName,
+      columns: columnNames.map((name) => ({
+        id: name,
+        name,
+        isValue: false,
+      })),
+      rows,
+    }];
+  });
+}
+
 export interface ParsedV5 {
   type: string;
   series: UiSeries[];
   tables: UiTable[];
   rawCount: number;
+  /** Queries of the request (name/signal/groupBy/step/metric), for drill-down click semantics. */
+  queries: QueryMeta[];
+}
+
+/** Step intervals (seconds) keyed by query name, as returned in `data.meta.stepIntervals`. */
+function stepIntervalsOf(meta: Record<string, unknown> | undefined): Record<string, number> {
+  const raw = meta?.stepIntervals;
+  if (!raw || typeof raw !== 'object') return {};
+  const out: Record<string, number> = {};
+  for (const [name, value] of Object.entries(raw as Record<string, unknown>)) {
+    const n = Number(value);
+    if (Number.isFinite(n) && n > 0) out[name] = n;
+  }
+  return out;
+}
+
+/** Builds the click-semantics metadata from the request payload plus the response's step intervals. */
+export function queryMetaOf(
+  payloadQueries: Record<string, unknown>[] | undefined,
+  steps: Record<string, number>,
+): QueryMeta[] {
+  const out: QueryMeta[] = [];
+  for (const envelope of payloadQueries ?? []) {
+    const spec = (envelope as Record<string, unknown>).spec as Record<string, unknown> | undefined;
+    const name = typeof spec?.name === 'string' ? spec.name : '';
+    if (name === '') continue;
+    const groupBy = Array.isArray(spec?.groupBy)
+      ? (spec?.groupBy as Record<string, unknown>[])
+          .map((g) => (typeof g?.name === 'string' ? g.name : ''))
+          .filter((n) => n !== '')
+      : undefined;
+    const aggregations = Array.isArray(spec?.aggregations) ? (spec?.aggregations as Record<string, unknown>[]) : [];
+    const metricName = typeof aggregations[0]?.metricName === 'string' ? aggregations[0].metricName : undefined;
+    const payloadStep = Number(spec?.stepInterval);
+    out.push({
+      name,
+      signal: typeof spec?.signal === 'string' ? spec.signal : undefined,
+      groupBy: groupBy && groupBy.length > 0 ? groupBy : undefined,
+      step: steps[name] ?? (Number.isFinite(payloadStep) && payloadStep > 0 ? payloadStep : undefined),
+      metricName,
+    });
+  }
+  return out;
 }
 
 export function parseV5Response(
@@ -160,7 +240,11 @@ export function parseV5Response(
   const inner = (data.data ?? data) as Record<string, unknown>;
   const type = String(inner.type ?? data.type ?? '');
   const results = ((inner.results as Record<string, unknown>[] | undefined) ?? (data.results as Record<string, unknown>[] | undefined) ?? []);
-  if (type === 'time_series') return { type, series: parseTimeSeries(results, legendMap), tables: [], rawCount: 0 };
+  const queries = queryMetaOf(
+    payloadQueries,
+    stepIntervalsOf((data.meta ?? inner.meta) as Record<string, unknown> | undefined),
+  );
+  if (type === 'time_series') return { type, series: parseTimeSeries(results, legendMap), tables: [], rawCount: 0, queries };
   if (type === 'scalar') {
     // scalar has two shapes: columnar (columns+data, table-like) and series-like
     // (aggregations+series, pie/value-like, native takes the convertTimeSeriesData branch)
@@ -175,8 +259,13 @@ export function parseV5Response(
       series: parseTimeSeries(seriesLike, legendMap),
       tables: parseScalar(columnar, legendMap, payloadQueries),
       rawCount: 0,
+      queries,
     };
   }
-  if (type === 'raw' || type === 'trace') return { type, series: [], tables: [], rawCount: results.length };
-  return { type, series: [], tables: [], rawCount: results.length };
+  if (type === 'raw') {
+    const tables = parseRaw(results);
+    return { type, series: [], tables, rawCount: results.length, queries };
+  }
+  if (type === 'trace') return { type, series: [], tables: [], rawCount: results.length, queries };
+  return { type, series: [], tables: [], rawCount: results.length, queries };
 }

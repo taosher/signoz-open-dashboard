@@ -49,6 +49,29 @@ export interface ParsedEmbedParams {
   fullscreenControl: ControlVisibility;
   localeControl: ControlVisibility;
   vars: Record<string, string>;
+  /**
+   * What a panel click does: `navigate` jumps in place to the link's dashboard (default),
+   * `menu` opens the native-style context menu, `off` disables clicks entirely.
+   */
+  drilldown: DrilldownMode;
+  /**
+   * Extra filter expression applied to every panel query (in-place drill-down scope).
+   * Set by the embed itself when hopping between dashboards, never by the host.
+   */
+  focus: string;
+}
+
+export const KNOWN_DRILLDOWN_MODES = ['navigate', 'menu', 'off'] as const;
+export type DrilldownMode = (typeof KNOWN_DRILLDOWN_MODES)[number];
+export const DEFAULT_DRILLDOWN_MODE: DrilldownMode = 'navigate';
+
+export function normalizeDrilldownMode(raw: unknown): DrilldownMode {
+  const v = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  return (KNOWN_DRILLDOWN_MODES as readonly string[]).includes(v)
+    ? (v as DrilldownMode)
+    : DEFAULT_DRILLDOWN_MODE;
 }
 
 const UUID_RE =
@@ -198,6 +221,8 @@ export function parseEmbedParams(
     toolbar: parseBool(params.get('toolbar'), true),
     title: parseBool(params.get('title'), true),
     fullscreen: parseBool(params.get('fullscreen'), false),
+    drilldown: normalizeDrilldownMode(params.get('drilldown')),
+    focus: (params.get('focus') ?? '').trim(),
     timeControl: normalizeControlVisibility(params.get('timeControl')),
     refreshControl: normalizeControlVisibility(params.get('refreshControl')),
     modeControl: normalizeControlVisibility(params.get('modeControl')),
@@ -258,6 +283,8 @@ export function serializeEmbedParams(
   if (p.modeControl !== 'show') s.set('modeControl', p.modeControl);
   if (p.fullscreenControl !== 'show') s.set('fullscreenControl', p.fullscreenControl);
   if (p.localeControl !== 'show') s.set('localeControl', p.localeControl);
+  if (p.drilldown && p.drilldown !== DEFAULT_DRILLDOWN_MODE) s.set('drilldown', p.drilldown);
+  if (p.focus) s.set('focus', p.focus);
   for (const [k, v] of Object.entries(p.vars)) {
     s.set(`var-${k}`, v);
   }

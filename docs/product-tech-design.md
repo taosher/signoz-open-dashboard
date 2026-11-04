@@ -2,7 +2,7 @@
 
 - Status: Ready for Review
 - Baseline: SigNoz `v0.97.0` (`6c59b5405 chore(release): bump to v0.97.0`), local code at `~/develop/open-source/signoz`
-- Test backend: `http://192.168.10.2:30303` / `truth-ai@truth-ai.com.cn` / `ecsOdMuggJlvmZJmscvMtXlL9HyHKOyv00nwhPubfG8=` / Dashboard `019ca330-42b0-7a60-b882-1e607e047942` (System Overview (系统资源总览), 4 panels, v5)
+- Test backend: `http://signoz.example.internal:30303` / `<test-account>` / `<SIGNOZ_API_KEY>` / Dashboard `<dashboard-id>` (System Overview (系统资源总览), 4 panels, v5)
 - Verified: `GET /api/v1/dashboards/:id` with the `SIGNOZ-API-KEY` header succeeds; no changes to SigNoz Go code are needed.
 
 ---
@@ -21,7 +21,7 @@ Build a standalone service so any third-party site can embed a read-only dashboa
 
 ```html
 <iframe
-  src="https://embed.example.com/embed/019ca330-42b0-7a60-b882-1e607e047942?apiKey=ecsOdMuggJlvmZJmscvMtXlL9HyHKOyv00nwhPubfG8=&from=now-6h&to=now&theme=shadcn&locale=zh"
+  src="https://embed.example.com/embed/<dashboard-id>?apiKey=<SIGNOZ_API_KEY>&from=now-6h&to=now&theme=shadcn&locale=zh"
   style="width:100%;border:0"
   allowfullscreen>
 </iframe>
@@ -115,7 +115,7 @@ Time params reuse SigNoz native names (`DateTimeSelectionV2` recognizes them dir
 | `fullscreen` | `?fullscreen=true` | No | `false` | Enter fullscreen directly (auto-enter after load; the toolbar button toggles between fullscreen and exit) |
 
 - All param changes sync back to the address bar via `history.replaceState` (no push, no history pollution).
-- `dashboardId` is a SigNoz UUID v7 (e.g. `019ca330-...`); an illegal format goes directly to the 404 empty state without hitting upstream.
+- `dashboardId` is a SigNoz UUID v7 (e.g. `<dashboard-id>`); an illegal format goes directly to the 404 empty state without hitting upstream.
 
 iframe-resizer (`davidjbradshaw/iframe-resizer` v5):
 
@@ -206,7 +206,7 @@ Node: `20 LTS` (compatible with SigNoz `engines >=16.15`, pinned to 20).
 
 | Variable | Required | Default | Notes |
 |---|---|---|---|
-| `SIGNOZ_BASE_URL` | Yes | `http://192.168.10.2:30303` (example) | The only upstream; URL override is not allowed |
+| `SIGNOZ_BASE_URL` | Yes | `http://signoz.example.internal:30303` (example) | The only upstream; URL override is not allowed |
 | `SIGNOZ_API_KEY` | No | Empty | Default key, overridable by the URL `apiKey` |
 | `PORT` | No | `8080` | NestJS listen port |
 | `UPSTREAM_TIMEOUT_MS` | No | `30000` | queryRange; meta APIs use 10000 |
@@ -330,6 +330,7 @@ interface ThemeModule {
 ### 7.6 shadcn Theme (default, `?theme=shadcn`)
 
 - Component library: tailwind (preflight off, does not pollute legacy) + Recharts (against `ui.shadcn chart`: ChartContainer composition + CSS-variable palette) + Base UI primitives (Select/Popover/ToggleGroup/Checkbox, same family as the charts) + lucide icons;
+- `signoz/TextPanel` renders its `spec.text` as sanitized Markdown in the shadcn theme. Markdown links are restricted to safe web protocols, and raw HTML is not rendered.
 - Data fetching / variables / legend / unit semantics share `core/` + `signoz/` with legacy; only the render layer differs; color scheme likewise comes from the core context (`.schn-dark` class variant).
 
 ---
@@ -367,7 +368,7 @@ the earlier raw `node_modules` copy is not runnable because pnpm links package d
 `apps/api/node_modules`. The web build is not optional: a failed frontend build fails the image
 instead of shipping a placeholder page.
 
-`compose` example: `embed: image: taosherio/signoz-open-dashboard:0.97.0-embed.1; env: SIGNOZ_BASE_URL=http://192.168.10.2:30303, SIGNOZ_API_KEY=...; ports: 8080:8080`.
+`compose` example: `embed: image: taosherio/signoz-open-dashboard:0.97.0-embed.1; env: SIGNOZ_BASE_URL=http://signoz.example.internal:30303, SIGNOZ_API_KEY=...; ports: 8080:8080`.
 
 ### 9.1 CI: Docker image publish to Docker Hub (`.github/workflows/docker-publish.yml`)
 
@@ -417,7 +418,7 @@ Marketing site + usage docs for this project. Non-goals: it never talks to SigNo
 
 ## 11. Testing and Acceptance (against the given backend)
 
-Smoke dashboard: `019ca330-...` (System Overview (系统资源总览)) + one more dashboard with variables + table still to be prepared.
+Smoke dashboard: `<dashboard-id>` (System Overview (系统资源总览)) + one more dashboard with variables + table still to be prepared.
 
 | # | Case | Expectation | Status |
 |---|---|---|---|
@@ -457,9 +458,9 @@ Note: pixel-level screenshot diffing against the console is no longer done (dire
 ## Appendix A. Verified Upstream Evidence
 
 ```bash
-curl -H "SIGNOZ-API-KEY: ecsOdMuggJlvmZJmscvMtXlL9HyHKOyv00nwhPubfG8=" \
-  http://192.168.10.2:30303/api/v1/dashboards/019ca330-42b0-7a60-b882-1e607e047942
-# {"status":"success","data":{"id":"019ca330-...","data":{"title":"System Overview (系统资源总览)","widgets":[...4],"version":"v5",...}}}
+curl -H "SIGNOZ-API-KEY: <SIGNOZ_API_KEY>" \
+  http://signoz.example.internal:30303/api/v1/dashboards/<dashboard-id>
+# {"status":"success","data":{"id":"<dashboard-id>","data":{"title":"System Overview (系统资源总览)","widgets":[...4],"version":"v5",...}}}
 ```
 
 Key source paths (v0.97.0): `frontend/src/container/NewDashboard/*`, `frontend/src/providers/Dashboard/Dashboard.tsx`, `frontend/src/api/{index.ts,v5/queryRange/*,dashboard/variables/*}`, `pkg/query-service/app/{server.go:179,http_handler.go:382-383,468,474-475,520-526}`.

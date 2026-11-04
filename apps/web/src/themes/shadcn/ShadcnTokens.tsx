@@ -8,14 +8,15 @@ export function ShadcnTokensProvider({ children }: { children: ReactNode }): JSX
   const dark = mode === 'dark';
   return (
     <div
-      className={dark ? 'schn schn-dark' : 'schn'}
+      // Full-page children (e.g. the error state) size themselves with flex, so the page shell
+      // must be a flex column that can actually take the viewport height.
+      className={dark ? 'schn schn-dark flex min-h-screen flex-col' : 'schn flex min-h-screen flex-col'}
       style={{
-        minHeight: '100vh',
         backgroundColor: 'var(--embed-page-bg)',
         colorScheme: dark ? 'dark' : 'light',
         ['--embed-page-bg' as string]: dark ? '#09090b' : '#ffffff',
-        ['--embed-page-pad' as string]: '24px',
-        ['--embed-grid-gap' as string]: '24px',
+        ['--embed-page-pad' as string]: '12px',
+        ['--embed-grid-gap' as string]: '12px',
       }}
     >
       {children}

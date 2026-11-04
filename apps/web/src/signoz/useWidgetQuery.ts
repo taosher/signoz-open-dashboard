@@ -4,6 +4,7 @@
  * and `refreshing` is true during background refetch (theme may show a subtle hint instead of flashing a Spin).
  */
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiFetch } from '../core/api';
 import { useEmbedAuth } from '../core/auth';
 import type { EmbedWidget } from '../core/dashboard';
@@ -23,18 +24,27 @@ export interface WidgetQueryState {
 
 export function useWidgetQuery(
   widget: EmbedWidget,
-  opts: { startMs: number; endMs: number; variables: Record<string, unknown>; refreshKey: number; enabled?: boolean },
+  opts: {
+    startMs: number;
+    endMs: number;
+    variables: Record<string, unknown>;
+    refreshKey: number;
+    enabled?: boolean;
+    /** Extra filter ANDed onto every query (in-place drill-down scope). */
+    focus?: string;
+  },
 ): WidgetQueryState {
   const { dashboardId, apiKey } = useEmbedAuth();
   const enabled = opts.enabled ?? true;
-  const varsHash = stableHash(opts.variables);
-
-  const built = buildQueryRangePayload(widget, {
-    startMs: opts.startMs,
-    endMs: opts.endMs,
-    variables: opts.variables,
-  });
-  const payloadJson = built.payload ? stableHash(built.payload) : null;
+  // Building the payload walks the whole composite query and hashing it sorts the object deeply;
+  // both only depend on these inputs, so keep them off the re-render path.
+  const { startMs, endMs, variables, focus } = opts;
+  const varsHash = useMemo(() => stableHash(variables), [variables]);
+  const built = useMemo(
+    () => buildQueryRangePayload(widget, { startMs, endMs, variables, focus }),
+    [widget, startMs, endMs, variables, focus],
+  );
+  const payloadJson = useMemo(() => (built.payload ? stableHash(built.payload) : null), [built]);
 
   const query = useQuery({
     queryKey: [
@@ -46,6 +56,7 @@ export function useWidgetQuery(
       opts.endMs,
       varsHash,
       opts.refreshKey,
+      opts.focus ?? '',
       apiKey ? 'key' : 'nokey',
     ],
     queryFn: async ({ signal }): Promise<ParsedV5 | null> => {

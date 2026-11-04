@@ -27,6 +27,8 @@ export interface ShadcnStrings {
   unsupportedPanel: string;
   prevPage: string;
   nextPage: string;
+  drilldownSignal: Record<string, string>;
+  drilldownWindow: string;
   errorTitle: Record<EmbedErrorCode, string>;
 }
 
@@ -66,6 +68,8 @@ const ZH: ShadcnStrings = {
   unsupportedPanel: '暂不支持的 panel',
   prevPage: '上一页',
   nextPage: '下一页',
+  drilldownSignal: { metrics: '指标', logs: '日志', traces: '链路' },
+  drilldownWindow: '时间窗',
   timeLabel: '时间',
   refreshLabel: '刷新',
   errorTitle: {
@@ -115,6 +119,8 @@ const EN: ShadcnStrings = {
   unsupportedPanel: 'Unsupported panel',
   prevPage: 'Previous',
   nextPage: 'Next',
+  drilldownSignal: { metrics: 'Metrics', logs: 'Logs', traces: 'Traces' },
+  drilldownWindow: 'Window',
   timeLabel: 'Time',
   refreshLabel: 'Refresh',
   errorTitle: {

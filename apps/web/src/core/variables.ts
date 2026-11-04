@@ -32,7 +32,7 @@ function escapeReg(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function quoteIdent(v: string | number | boolean): string {
+export function quoteIdent(v: string | number | boolean): string {
   if (typeof v === 'string') return `'${v.replace(/'/g, "\\'")}'`;
   return String(v);
 }
@@ -160,7 +160,7 @@ export async function resolveVariables(
     const name = v.name;
     if (!name) continue;
     const urlRaw = opts.urlVars[name];
-    if (urlRaw !== undefined) {
+    if (urlRaw !== undefined && urlRaw.trim() !== '') {
       const val: unknown = v.multiSelect ? urlRaw.split(',').map((s) => s.trim()).filter((s) => s !== '') : urlRaw;
       values[name] = val;
       options[name] = toArray(val);

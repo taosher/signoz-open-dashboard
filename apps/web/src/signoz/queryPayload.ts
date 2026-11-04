@@ -20,6 +20,13 @@ interface BuildOpts {
   startMs: number;
   endMs: number;
   variables?: Record<string, unknown>;
+  /**
+   * Extra filter expression ANDed onto every builder query in the payload.
+   * Used for in-embed drill-down: the target dashboard opens scoped to the clicked dimension,
+   * which SigNoz itself cannot express through variables (a variable is substituted at value
+   * level only, so `$field = $value` never matches).
+   */
+  focus?: string;
 }
 
 function signalOf(dataSource: string | undefined): 'traces' | 'logs' | 'metrics' {
@@ -63,7 +70,20 @@ function mapSelectFields(cols: unknown): Record<string, unknown>[] | undefined {
   });
 }
 
-function toBuilderEnvelopes(items: BuilderQueryItem[], requestType: string, panelType: string): Record<string, unknown>[] {
+function withFocus(expression: string, focus: string | undefined): string {
+  const base = expression.trim();
+  const extra = (focus ?? '').trim();
+  if (extra === '') return base;
+  if (base === '') return extra;
+  return `${base} AND ${extra}`;
+}
+
+function toBuilderEnvelopes(
+  items: BuilderQueryItem[],
+  requestType: string,
+  panelType: string,
+  focus?: string,
+): Record<string, unknown>[] {
   return items.map((q) => {
     const signal = signalOf(typeof q.dataSource === 'string' ? q.dataSource : undefined);
     const spec: Record<string, unknown> = {
@@ -71,7 +91,9 @@ function toBuilderEnvelopes(items: BuilderQueryItem[], requestType: string, pane
       signal,
       stepInterval: (q.stepInterval as string | number | null | undefined) || null,
       disabled: q.disabled,
-      filter: q.filter ?? { expression: '' },
+      filter: {
+        expression: withFocus(String((q.filter as { expression?: string } | undefined)?.expression ?? ''), focus),
+      },
       legend: clean(q.legend as string | undefined),
       having: (q.having as { expression?: string } | undefined)?.expression
         ? q.having
@@ -140,7 +162,7 @@ export function buildQueryRangePayload(
     for (const q of items) {
       if (typeof q.legend === 'string' && q.legend !== '') legendMap[q.queryName] = q.legend;
     }
-    envelopes.push(...toBuilderEnvelopes(items, requestType, panelType));
+    envelopes.push(...toBuilderEnvelopes(items, requestType, panelType, opts.focus));
     const formulas = ((b.queryFormulas as { queryName: string; expression?: string; legend?: string; disabled?: boolean }[] | undefined) ?? []).filter(
       (f) => f && typeof f.queryName === 'string' && typeof f.expression === 'string' && f.expression.trim() !== '',
     );

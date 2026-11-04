@@ -1,14 +1,15 @@
 /**
  * Legacy WidgetCard: dispatch rendering by panelTypes
- * (graph/table/list/pie/bar/histogram/value; rows are flattened by App and never enter cards).
+ * (graph/table/list/pie/bar/histogram/value/text; rows are flattened by App and never enter cards).
  * Charts use an echarts-based custom implementation; visual closeness is enough (design doc §7.3).
  */
 import { Card, Empty, Spin, Statistic, Table } from 'antd';
 import * as echarts from 'echarts';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { EmbedLocale } from '@signoz-open-dashboard/shared';
 import { chartForeground, useColorMode } from '../../core/colorMode';
 import { toErrorProps } from '../../core/errors';
+import { renderMarkdown } from '../../core/markdown';
 import { widgetTitle } from '../../core/dashboard';
 import { formatValue } from '../../signoz/format';
 import type { UiSeries, UiTable } from '../../signoz/v5Response';
@@ -85,6 +86,17 @@ function axisTooltipFormatter(
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function LegacyMarkdown({ value }: { value: string }): JSX.Element {
+  const html = useMemo(() => renderMarkdown(value), [value]);
+  return (
+    <div
+      className="legacy-markdown"
+      style={{ lineHeight: 1.6, overflowWrap: 'anywhere' }}
+      dangerouslySetInnerHTML={{ __html: html }}
+    />
+  );
 }
 
 function seriesOption(series: UiSeries[], unit: string | undefined, dark: boolean): echarts.EChartsCoreOption {
@@ -259,11 +271,12 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
   const title = widgetTitle(widget);
   const panel = String(widget.panelTypes ?? '');
   const t = legacyStrings(props.locale ?? 'zh');
+  const [tipVisible, setTipVisible] = useState(false);
 
   let body: JSX.Element;
   if (loading && !data) {
     body = (
-      <div style={{ flex: 1, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Spin size="large">
           <div style={{ padding: 16 }} />
         </Spin>
@@ -287,12 +300,18 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
     // Columnar scalar takes the first row's first value column; series-like scalar takes the first series' latest value
     const v = Number.isFinite(raw) ? raw : single;
     body = (
-      <div style={{ flex: 1, minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         {Number.isFinite(v) ? (
           <Statistic value={formatValue(v, widget.yAxisUnit)} />
         ) : (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t.noData} />
         )}
+      </div>
+    );
+  } else if (panel === 'text') {
+    body = (
+      <div style={{ flex: 1, minHeight: 0, overflow: 'auto', padding: 8 }}>
+        <LegacyMarkdown value={widget.text ?? ''} />
       </div>
     );
   } else if (panel === 'table' || panel === 'list') {
@@ -326,7 +345,7 @@ export function LegacyWidgetCard(props: WidgetProps): JSX.Element {
   return (
     <Card
       size="small"
-      title={title}
+      title={widget.description ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><span>{title}</span><span style={{ position: 'relative', display: 'inline-flex' }} onMouseEnter={() => setTipVisible(true)} onMouseLeave={() => setTipVisible(false)} onFocus={() => setTipVisible(true)} onBlur={() => setTipVisible(false)}><span aria-label={`${title}：${widget.description}`} tabIndex={0} style={{ width: 14, height: 14, border: '1px solid currentColor', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, lineHeight: 1, cursor: 'help', color: '#8c8c8c' }}>i</span>{tipVisible ? <span role="tooltip" style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 6px)', left: '50%', transform: 'translateX(-50%)', width: 'max-content', maxWidth: 280, padding: '6px 8px', border: '1px solid #d9d9d9', borderRadius: 6, background: '#fff', color: '#262626', fontSize: 11, fontWeight: 400, lineHeight: 1.45, whiteSpace: 'normal', pointerEvents: 'none', boxShadow: '0 4px 12px rgba(0,0,0,.12)' }}>{widget.description}</span> : null}</span></span> : title}
       extra={
         props.refreshing ? (
           <span style={{ fontSize: 12, color: '#999' }} title="refreshing">
