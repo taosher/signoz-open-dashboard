@@ -6,6 +6,7 @@ import { clsx } from 'clsx';
 import type { ButtonHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { twMerge } from 'tailwind-merge';
 import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
+import * as TooltipPrimitive from '@radix-ui/react-tooltip';
 
 export function cn(...inputs: (string | undefined | false)[]): string {
   return twMerge(clsx(...inputs));
@@ -51,17 +52,29 @@ export function SchnSelect(props: SelectHTMLAttributes<HTMLSelectElement>): JSX.
 
 export function SchnInfoTip({ content }: { content: string }): JSX.Element {
   return (
-    <span className="group relative inline-flex shrink-0" aria-label={content} tabIndex={0}>
-      <span className="inline-flex size-3.5 cursor-help items-center justify-center rounded-full border border-zinc-300 text-[12px] font-semibold leading-none text-zinc-500 outline-none dark:border-zinc-700 dark:text-zinc-400">
-        i
-      </span>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute left-0 top-full z-50 mt-1.5 w-max max-w-[min(280px,calc(100vw-32px))] translate-x-0 rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left text-[11px] font-normal leading-4 text-zinc-900 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus:opacity-100 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
-      >
-        {content}
-      </span>
-    </span>
+    <TooltipPrimitive.Provider delayDuration={200} skipDelayDuration={100}>
+      <TooltipPrimitive.Root>
+        <TooltipPrimitive.Trigger asChild>
+          <button
+            type="button"
+            aria-label={content}
+            className="inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full border border-zinc-300 bg-transparent p-0 text-[12px] font-semibold leading-none text-zinc-500 outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 dark:border-zinc-700 dark:text-zinc-400"
+          >
+            i
+          </button>
+        </TooltipPrimitive.Trigger>
+        <TooltipPrimitive.Portal>
+          <TooltipPrimitive.Content
+            sideOffset={6}
+            collisionPadding={8}
+            className="z-[100] w-max max-w-[min(280px,calc(100vw-16px))] rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-left text-[11px] font-normal leading-4 text-zinc-900 shadow-lg outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50"
+          >
+            {content}
+            <TooltipPrimitive.Arrow className="fill-white dark:fill-zinc-950" />
+          </TooltipPrimitive.Content>
+        </TooltipPrimitive.Portal>
+      </TooltipPrimitive.Root>
+    </TooltipPrimitive.Provider>
   );
 }
 
