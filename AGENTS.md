@@ -29,7 +29,7 @@
 - Build all: `pnpm build` (auto-syncs `web/dist` → `api/web-dist`); single package: `pnpm build:api` / `pnpm build:shared` / `pnpm build:web`.
 - Test all: `pnpm test`; API unit tests: `pnpm test:api`; API e2e (proxy matrix with mocked upstream): `pnpm --filter @signoz-open-dashboard/api test:e2e`.
 - Typecheck: `pnpm typecheck` (or per package `pnpm --filter <pkg> typecheck`).
-- Start the API locally: `SIGNOZ_BASE_URL=http://192.168.10.2:30303 SIGNOZ_API_KEY=<key> pnpm dev:api` (dev, watch); production build artifact: `SIGNOZ_BASE_URL=... node apps/api/dist/main.js`. Health check: `GET /healthz`, metrics: `GET /metrics`.
+- Start the API locally: `SIGNOZ_BASE_URL=http://signoz.example.internal:30303 SIGNOZ_API_KEY=<key> pnpm dev:api` (dev, watch); production build artifact: `SIGNOZ_BASE_URL=... node apps/api/dist/main.js`. Health check: `GET /healthz`, metrics: `GET /metrics`.
 - Local frontend dev: `pnpm dev:web` (vite on :5173, `/api/signoz` proxied to `:8080`, requires `dev:api` running alongside); after a full build `apps/web/dist` is auto-synced to `apps/api/web-dist` (`scripts/sync-web-dist.js`, the NestJS ServeStatic mount point).
 - Note: `apps/web` is being redone in M5, so `pnpm build:web` / `pnpm build` are expected to fail (leftover files still reference the deleted `vendor/`). This is normal and recovers once M5 lands; `pnpm build:api` / `pnpm test` are unaffected.
 - For the real-backend integration matrix (dashboard GET / query_range passthrough / write-interface 403 / error-code mapping) see the M1 acceptance record in `TODOS.md`; probe with `GET /api/signoz/api/v1/dashboards/:id` + the `x-embed-api-key` header.

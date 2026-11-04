@@ -7,7 +7,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SIGNOZ_BASE_URL: ${SIGNOZ_BASE_URL:-http://192.168.10.2:30303}
+      SIGNOZ_BASE_URL: ${SIGNOZ_BASE_URL:-http://signoz.example.internal:30303}
       SIGNOZ_API_KEY: ${SIGNOZ_API_KEY:-}
       PORT: 8080
       LOG_LEVEL: info
