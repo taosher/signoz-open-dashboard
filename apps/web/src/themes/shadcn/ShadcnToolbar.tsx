@@ -114,6 +114,8 @@ export function ShadcnToolbar(props: ToolbarProps): JSX.Element {
     return String(Array.isArray(cur) ? (cur[0] ?? '') : cur);
   };
 
+  if (!props.showToolbar) return <></>;
+
   return (
     <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 border-b border-zinc-200 bg-white/95 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95">
       {props.showTitle ? <h1 className="mr-1 text-[15px] font-semibold text-zinc-950 dark:text-zinc-50">{props.title}</h1> : null}
